@@ -1,0 +1,48 @@
+{
+  "alembic_version": [
+    {
+      "name": "version_num",
+      "type": "VARCHAR(32)",
+      "nullable": false,
+      "default": "None"
+    }
+  ],
+  "users": [
+    {
+      "name": "id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "email",
+      "type": "VARCHAR(320)",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "hashed_password",
+      "type": "VARCHAR(1024)",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "is_active",
+      "type": "BOOLEAN",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "is_superuser",
+      "type": "BOOLEAN",
+      "nullable": false,
+      "default": "None"
+    },
+    {
+      "name": "is_verified",
+      "type": "BOOLEAN",
+      "nullable": false,
+      "default": "None"
+    }
+  ]
+}
