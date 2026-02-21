@@ -4,8 +4,10 @@ from typing import Generic, Optional
 from fastapi_users import models
 
 
+import uuid
+
 class UserRead(schemas.CreateUpdateDictModel, Generic[models.ID]):
-    id: models.ID
+    id: uuid.UUID
     email: EmailStr
     is_verified: bool = False
 

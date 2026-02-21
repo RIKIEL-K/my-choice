@@ -51,6 +51,16 @@ class Settings(BaseSettings):
 
     AUTHENTICATE_MAX_FAILED_ATTEMPTS: int = 5
 
+    # Election service integration
+    ELECTION_SERVICE_WEBHOOK_URL: str = os.getenv(
+        "ELECTION_SERVICE_WEBHOOK_URL",
+        "http://127.0.0.1:8001/api/v1/webhook/user-created",
+    )
+    ELECTION_SERVICE_WEBHOOK_SECRET: str = os.getenv(
+        "ELECTION_SERVICE_WEBHOOK_SECRET", "change-me-in-production"
+    )
+
+
 
 print("Loading environment variables...")
 print(f"DATABASE_URL: {os.getenv('DATABASE_URL')}")

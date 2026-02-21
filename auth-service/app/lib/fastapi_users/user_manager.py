@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import Depends, Request, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi_users import BaseUserManager, UUIDIDMixin, exceptions, models, schemas
@@ -34,6 +35,26 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
     AUTHENTICATE_MAX_FAILED_ATTEMPTS = settings.AUTHENTICATE_MAX_FAILED_ATTEMPTS
     LOCK_MINUTES = 30
     RESET_FAILED_ATTEMPTS_SECONDS = 1800  # 30 minutes
+
+    async def on_after_register(
+        self, user: User, request: Optional[Request] = None
+    ):
+        """
+        Called after a user successfully registers.
+        Notifies the election-service to create an empty ElectionUser profile.
+        This call is fire-and-forget: a failure does NOT block registration.
+        """
+        election_url = settings.ELECTION_SERVICE_WEBHOOK_URL
+        secret = settings.ELECTION_SERVICE_WEBHOOK_SECRET
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                await client.post(
+                    election_url,
+                    json={"user_id": str(user.id), "email": user.email},
+                    headers={"x-webhook-secret": secret},
+                )
+        except Exception:  # noqa: BLE001 — never block registration
+            pass
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None

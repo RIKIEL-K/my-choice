@@ -1,23 +1,31 @@
 // Types for the Election microservice API
-// Update these to match the actual OpenAPI schema once the service is live.
+// Matches the actual OpenAPI schema of election-service running on port 8001.
+
+export type ElectionStatus = "draft" | "active" | "closed";
 
 export interface ElectionCandidate {
     id: string;
-    name: string;
-    description?: string;
-    avatar_url?: string;
+    election_id: string;
+    user_id: string;
+    display_name: string;
+    bio?: string | null;
+    avatar_url?: string | null;
+    vote_count: number;
+    created_at: string; // ISO 8601
 }
 
 export interface Election {
     id: string;
     title: string;
-    description: string;
+    description?: string | null;
     start_date: string;    // ISO 8601
     end_date: string;      // ISO 8601
-    status: "draft" | "active" | "closed";
+    status: ElectionStatus;
     total_voters: number;
     vote_count: number;
+    participation: number; // 0-100 percentage
     candidates: ElectionCandidate[];
+    created_at: string;    // ISO 8601
 }
 
 export interface ElectionStats {
@@ -32,4 +40,34 @@ export interface ElectionListResponse {
     total: number;
     page: number;
     size: number;
+}
+
+// ── Inputs ────────────────────────────────────────────────────────────────
+
+export interface ElectionCreate {
+    title: string;
+    description?: string;
+    start_date: string;
+    end_date: string;
+    total_voters?: number;
+    status?: ElectionStatus;
+}
+
+export interface ElectionUpdate {
+    title?: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    total_voters?: number;
+    status?: ElectionStatus;
+}
+
+export interface CandidateCreate {
+    display_name: string;
+    bio?: string;
+    avatar_url?: string;
+}
+
+export interface VoteCreate {
+    candidate_id: string;
 }

@@ -1,0 +1,51 @@
+[project]
+name = "election-service"
+version = "0.1.0"
+description = "A FastAPI-based election microservice for the student voting platform."
+readme = "README.md"
+requires-python = ">=3.11.11"
+dependencies = [
+    "aiomysql>=0.2.0",
+    "alembic>=1.15.2",
+    "colorama>=0.4.6",
+    "databases>=0.9.0",
+    "fastapi>=0.115.12",
+    "httpx>=0.28.1",
+    "pydantic[email]>=2.11.3",
+    "email-validator>=2.0.0",
+    "pydantic-settings>=2.9.1",
+    "pymysql>=1.1.0",
+    "python-dotenv>=1.1.0",
+    "python-multipart>=0.0.20",
+    "ruff>=0.11.7",
+    "sqlalchemy>=2.0.40",
+    "uvicorn>=0.34.2",
+    "uuid7>=0.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "anyio>=4.9.0",
+    "coverage>=7.8.0",
+    "faker>=37.0.0",
+    "factory-boy>=3.3.3",
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=6.1.0",
+    "pytest-env>=1.1.5",
+    "httpx>=0.28.1",
+]
+
+[tool.setuptools]
+packages = ["app", "alembic", "tests"]
+
+[tool.ruff]
+line-length = 100
+exclude = [".venv", "alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+ignore_missing_imports = true
