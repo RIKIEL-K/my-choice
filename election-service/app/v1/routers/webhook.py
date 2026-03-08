@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_async_session
-from app.v1.repositories.election_user_repo import ElectionUserRepository
+from app.v1.repositories.election_user_repository import ElectionUserRepository
 from app.v1.schemas.webhook import UserCreatedPayload
 
 router = APIRouter()

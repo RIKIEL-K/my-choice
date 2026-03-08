@@ -3,9 +3,9 @@ from fastapi import HTTPException, status
 
 from app.models.election import Election, ElectionStatus
 from app.models.candidate import Candidate
-from app.v1.repositories.election_repo import ElectionRepository
-from app.v1.repositories.candidate_repo import CandidateRepository
-from app.v1.repositories.vote_repo import VoteRepository
+from app.v1.repositories.election_repository import ElectionRepository
+from app.v1.repositories.candidate_repository import CandidateRepository
+from app.v1.repositories.vote_repository import VoteRepository
 from app.v1.schemas.election import ElectionCreate, ElectionUpdate, ElectionListResponse, ElectionRead
 from app.v1.schemas.candidate import CandidateCreate, CandidateRead
 

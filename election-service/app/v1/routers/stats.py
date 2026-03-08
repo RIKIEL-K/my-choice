@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
-from app.v1.repositories.election_repo import ElectionRepository
-from app.v1.repositories.election_user_repo import ElectionUserRepository
+from app.v1.repositories.election_repository import ElectionRepository
+from app.v1.repositories.election_user_repository import ElectionUserRepository
 from app.v1.services.stats_service import StatsService
 from app.v1.schemas.stats import ElectionStats
 

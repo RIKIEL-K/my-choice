@@ -1,5 +1,5 @@
-from app.v1.repositories.election_repo import ElectionRepository
-from app.v1.repositories.election_user_repo import ElectionUserRepository
+from app.v1.repositories.election_repository import ElectionRepository
+from app.v1.repositories.election_user_repository import ElectionUserRepository
 from app.v1.schemas.stats import ElectionStats
 
 

@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
-from app.v1.repositories.election_repo import ElectionRepository
-from app.v1.repositories.candidate_repo import CandidateRepository
-from app.v1.repositories.vote_repo import VoteRepository
+from app.v1.repositories.election_repository import ElectionRepository
+from app.v1.repositories.candidate_repository import CandidateRepository
+from app.v1.repositories.vote_repository import VoteRepository
 from app.v1.services.election_service import ElectionService
 from app.v1.schemas.candidate import CandidateCreate, CandidateRead, CandidateUpdate
 
@@ -30,7 +30,7 @@ async def list_candidates(
     service: ElectionService = Depends(get_election_service),
 ):
     """Return all candidates registered for an election, with vote counts."""
-    from app.v1.repositories.candidate_repo import CandidateRepository
+    from app.v1.repositories.candidate_repository import CandidateRepository
     from app.db.session import get_async_session
     from app.v1.services.election_service import _candidate_to_read
     election_read = await service.get_election(election_id)

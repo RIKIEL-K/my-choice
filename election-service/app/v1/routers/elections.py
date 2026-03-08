@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
 from app.models.election import ElectionStatus
-from app.v1.repositories.election_repo import ElectionRepository
-from app.v1.repositories.candidate_repo import CandidateRepository
-from app.v1.repositories.vote_repo import VoteRepository
+from app.v1.repositories.election_repository import ElectionRepository
+from app.v1.repositories.candidate_repository import CandidateRepository
+from app.v1.repositories.vote_repository import VoteRepository
 from app.v1.services.election_service import ElectionService
 from app.v1.schemas.election import (
     ElectionCreate,
