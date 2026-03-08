@@ -10,7 +10,7 @@ import { useElections, useElectionStats } from "@/features/hooks/swr/fetcher/ele
 import { serviceName } from "@/config";
 
 // ------------------------------------------------------------------
-// Adapters: convert API types → VotingDashboard prop types
+// Adapters: convert API types to VotingDashboard prop types
 // ------------------------------------------------------------------
 
 function adaptElections(
@@ -19,7 +19,7 @@ function adaptElections(
   return apiElections.map((e) => ({
     id: Number(e.id),
     title: e.title,
-    description: e.description,
+    description: e.description ?? "",
     endDate: e.end_date,
     participation:
       e.total_voters > 0
