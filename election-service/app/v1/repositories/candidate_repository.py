@@ -10,15 +10,15 @@ class CandidateRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_by_election(self, election_id: str) -> list[Candidate]:
+    async def get_by_election(self, election_id) -> list[Candidate]:
         result = await self.session.execute(
-            select(Candidate).where(Candidate.election_id == election_id)
+            select(Candidate).where(Candidate.election_id == str(election_id))
         )
         return result.scalars().all()  
 
-    async def get_by_id(self, candidate_id: str) -> Candidate | None:
+    async def get_by_id(self, candidate_id) -> Candidate | None:
         result = await self.session.execute(
-            select(Candidate).where(Candidate.id == candidate_id)
+            select(Candidate).where(Candidate.id == str(candidate_id))
         )
         return result.scalar_one_or_none()
 

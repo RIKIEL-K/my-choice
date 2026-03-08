@@ -33,10 +33,10 @@ class ElectionRepository:
         result = await self.session.execute(query.offset(offset).limit(size))
         return result.scalars().all(), total
 
-    async def get_by_id(self, election_id: str) -> Election | None:
+    async def get_by_id(self, election_id) -> Election | None:
         result = await self.session.execute(
             select(Election)
-            .where(Election.id == election_id)
+            .where(Election.id == str(election_id))
             .options(
                 selectinload(Election.candidates),
                 selectinload(Election.votes),

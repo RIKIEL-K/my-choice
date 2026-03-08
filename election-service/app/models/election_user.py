@@ -16,6 +16,7 @@ class ElectionUser(Base, TimestampMixin):
     )
     # Same UUID as the user in auth-service — the single cross-service link
     user_id: Mapped[str] = mapped_column(String(36), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 

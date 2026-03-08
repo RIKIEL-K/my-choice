@@ -105,6 +105,21 @@ class ElectionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Candidates can only be added to elections in draft status.",
             )
+        
+        # Check student status
+        from app.v1.repositories.election_user_repository import ElectionUserRepository
+        user_repo = ElectionUserRepository(self.election_repo.session)
+        eu = await user_repo.get_by_user_id(user_id)
+        if not eu:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            
+        email = eu.email.lower()
+        if not (email.endswith(".edu") or ".etu." in email):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Seuls les étudiants peuvent se présenter comme candidats.",
+            )
+
         existing = await self.candidate_repo.get_by_user_and_election(user_id, election_id)
         if existing:
             raise HTTPException(
@@ -135,6 +150,12 @@ class ElectionService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Election is not active."
             )
+        candidate = await self.candidate_repo.get_by_id(candidate_id)
+        if not candidate:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
+        if candidate.user_id == voter_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot vote for yourself.")
+
         try:
             await self.vote_repo.cast_vote(election_id, voter_id, candidate_id)
         except ValueError as e:

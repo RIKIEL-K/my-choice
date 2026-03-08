@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Vote, Users, Clock, TrendingUp, Calendar } from "lucide-react";
 
 export interface Election {
-    id: number;
+    id: string;
     title: string;
     description: string;
     endDate: string;
@@ -29,7 +29,7 @@ export interface VotingDashboardProps {
     elections: Election[];
     stats: Stat[];
     isLoading?: boolean;
-    onVoteClick?: () => void;
+    onVoteClick?: (electionId?: string) => void;
     onCalendarClick?: () => void;
     onCandidatesClick?: () => void;
     onResultsClick?: () => void;
@@ -79,7 +79,7 @@ export const VotingDashboard: React.FC<VotingDashboardProps> = ({
                         <Button
                             variant="secondary"
                             className="bg-white text-blue-600 hover:bg-blue-50"
-                            onClick={onVoteClick}
+                            onClick={() => onVoteClick && onVoteClick()}
                         >
                             <Vote className="w-4 h-4 mr-2" />
                             Voter maintenant
@@ -146,7 +146,7 @@ export const VotingDashboard: React.FC<VotingDashboardProps> = ({
                                             {election.description}
                                         </CardDescription>
                                     </div>
-                                    <Button onClick={onVoteClick} className="ml-4 shrink-0">
+                                    <Button onClick={() => onVoteClick && onVoteClick(election.id)} className="ml-4 shrink-0">
                                         <Vote className="w-4 h-4 mr-2" />
                                         Voter
                                     </Button>

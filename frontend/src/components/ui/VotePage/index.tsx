@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import {
@@ -13,91 +12,104 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/Dialog";
-import { ArrowLeft, Vote, CheckCircle, AlertTriangle, Info, Clock } from "lucide-react";
+import { ArrowLeft, Vote, CheckCircle, AlertTriangle, Info, Clock, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import useSWR from "swr";
+import { electionFetcher } from "@/features/hooks/swr/fetcher/election/electionFetcher";
+import { electionClient } from "@/lib/electionClient";
+import type { Election } from "@/types/api/election/election";
+import { useUser } from "@/features/hooks/swr/fetcher/user/useUser";
+import { parseAxiosErrorMessage } from "@/lib/parseAxiosErrorMessage";
+import { ErrorDisplay } from "@/components/ui/ErrorDisplay";
+import axios from "axios";
 
 export interface VotePageProps {
     onBack: () => void;
+    electionId?: string;
 }
 
-export interface Candidate {
-    id: string;
-    name: string;
-    program: string;
-    position: string;
-    photo: string | null;
-    slogan: string;
-    priorities: string[];
-}
-
-const defaultCandidates: Candidate[] = [
-    {
-        id: "sarah",
-        name: "Sarah Dupont",
-        program: "Renouveau Étudiant",
-        position: "Présidente",
-        photo: null,
-        slogan: "Ensemble pour un campus plus dynamique",
-        priorities: [
-            "Amélioration des équipements sportifs",
-            "Réduction des frais de restauration",
-            "Extension des horaires de la bibliothèque",
-        ],
-    },
-    {
-        id: "thomas",
-        name: "Thomas Martin",
-        program: "Ensemble Plus Loin",
-        position: "Président",
-        photo: null,
-        slogan: "Innovation et solidarité étudiante",
-        priorities: [
-            "Digitalisation des services étudiants",
-            "Création d'espaces de coworking",
-            "Programme de mentorat étudiant",
-        ],
-    },
-    {
-        id: "emma",
-        name: "Emma Rodriguez",
-        program: "Voix Étudiante",
-        position: "Vice-Présidente",
-        photo: null,
-        slogan: "Votre voix, notre engagement",
-        priorities: [
-            "Amélioration de la communication école-étudiants",
-            "Soutien aux étudiants internationaux",
-            "Développement du campus durable",
-        ],
-    },
-];
-
-export function VotePage({ onBack }: VotePageProps) {
+export function VotePage({ onBack, electionId }: VotePageProps) {
     const [selectedCandidate, setSelectedCandidate] = useState<string>("");
     const [isVoting, setIsVoting] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
+    const [alreadyVoted, setAlreadyVoted] = useState(false);
 
-    const candidates = defaultCandidates;
+    const { user } = useUser();
+
+    const { data: election, error, isLoading } = useSWR<Election>(
+        electionId ? `/elections/${electionId}` : null,
+        electionFetcher
+    );
 
     const handleVoteSubmit = async () => {
-        if (!selectedCandidate) {
-            toast.error("Veuillez sélectionner un candidat");
+        if (!selectedCandidate || !electionId || !user) {
+            toast.error("Données manquantes ou utilisateur non authentifié");
             return;
         }
 
         setIsVoting(true);
 
-        // Simulation de l'envoi du vote
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        setIsVoting(false);
-        setVoteSubmitted(true);
-        setShowConfirmation(false);
-
-        toast.success("Votre vote a été enregistré avec succès !");
+        try {
+            await electionClient.post(`/elections/${electionId}/vote`, {
+                candidate_id: selectedCandidate
+            }, {
+                params: { voter_id: user.id }
+            });
+            setVoteSubmitted(true);
+            setShowConfirmation(false);
+            toast.success("Votre vote a été enregistré avec succès !");
+        } catch (err) {
+            setShowConfirmation(false);
+            if (axios.isAxiosError(err) && err.response?.status === 409) {
+                setAlreadyVoted(true);
+            } else {
+                toast.error(parseAxiosErrorMessage(err));
+            }
+        } finally {
+            setIsVoting(false);
+        }
     };
 
+    if (alreadyVoted) {
+        return (
+            <ErrorDisplay
+                status={409}
+                errorMessage="Vous avez déjà voté"
+                description="Vous avez déjà participé à cette élection. Un seul vote est autorisé par utilisateur."
+                onBack={onBack}
+                onBackLabel="Retour au tableau de bord"
+            />
+        );
+    }
+
+    if (isLoading) {
+        return (
+             <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+                <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                <p>Chargement des données de l'élection...</p>
+            </div>
+        );
+    }
+
+    if (error || !election) {
+        return (
+            <div className="max-w-2xl mx-auto p-6">
+                <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+                    <CardContent className="pt-8 pb-8 text-center text-red-900 dark:text-red-100">
+                        <AlertTriangle className="w-8 h-8 mx-auto mb-4" />
+                        <h2 className="text-xl font-bold mb-2">Erreur de chargement</h2>
+                        <p>Impossible de trouver cette élection ou elle n'est pas accessible.</p>
+                        <Button onClick={onBack} variant="outline" className="mt-6">
+                            Retour
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    const { candidates } = election;
     const selectedCandidateData = candidates.find((c) => c.id === selectedCandidate);
 
     if (voteSubmitted) {
@@ -121,7 +133,7 @@ export function VotePage({ onBack }: VotePageProps) {
                             <div className="space-y-2 text-sm text-muted-foreground">
                                 <div className="flex justify-between">
                                     <span>Élection :</span>
-                                    <span>Bureau des Étudiants 2024-2025</span>
+                                    <span>{election.title}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Date et heure :</span>
@@ -141,13 +153,12 @@ export function VotePage({ onBack }: VotePageProps) {
                                 <ArrowLeft className="w-4 h-4 mr-2" />
                                 Retour au tableau de bord
                             </Button>
-                            <Button variant="secondary">Voir les résultats</Button>
                         </div>
 
                         <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                             <div className="flex items-start space-x-2">
                                 <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                <p className="text-xs text-blue-700 dark:text-blue-300 text-left">
                                     Votre vote est anonyme et sécurisé. Le numéro de confirmation ne
                                     permet pas de connaître votre choix de vote, il sert uniquement
                                     à vérifier que votre participation a bien été enregistrée.
@@ -163,20 +174,22 @@ export function VotePage({ onBack }: VotePageProps) {
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center space-x-4 mb-8">
-                <Button variant="ghost" onClick={onBack}>
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+                <Button variant="ghost" onClick={onBack} className="self-start">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Retour
                 </Button>
                 <div className="flex-1">
-                    <h1 className="text-2xl font-bold">Élection du Bureau des Étudiants</h1>
+                    <h1 className="text-2xl font-bold">{election.title}</h1>
                     <p className="text-muted-foreground">
-                        Choisissez votre candidat pour l'année 2024-2025
+                        {election.description || "Choisissez votre candidat"}
                     </p>
                 </div>
                 <div className="flex items-center space-x-2 text-orange-600 dark:text-orange-400">
                     <Clock className="w-4 h-4" />
-                    <span className="text-sm font-medium">2j 5h restantes</span>
+                    <span className="text-sm font-medium">
+                        Fin: {new Date(election.end_date).toLocaleDateString("fr-FR")}
+                    </span>
                 </div>
             </div>
 
@@ -192,6 +205,7 @@ export function VotePage({ onBack }: VotePageProps) {
                             <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                                 <li>• Sélectionnez le candidat de votre choix en cliquant sur sa carte</li>
                                 <li>• Vous ne pouvez voter qu'une seule fois pour cette élection</li>
+                                <li>• Les candidats ne peuvent pas voter pour eux-mêmes</li>
                                 <li>• Votre vote est anonyme et sécurisé</li>
                                 <li>• Vous pouvez changer votre choix avant de confirmer</li>
                             </ul>
@@ -203,72 +217,61 @@ export function VotePage({ onBack }: VotePageProps) {
             {/* Liste des candidats */}
             <RadioGroup value={selectedCandidate} onValueChange={setSelectedCandidate}>
                 <div className="space-y-4">
-                    {candidates.map((candidate) => (
-                        <Card
-                            key={candidate.id}
-                            className={`cursor-pointer transition-all ${
-                                selectedCandidate === candidate.id
-                                    ? "border-primary bg-primary/5 shadow-md"
-                                    : "hover:shadow-sm"
-                            }`}
-                            onClick={() => setSelectedCandidate(candidate.id)}
-                        >
-                            <CardContent className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex items-center">
-                                        <RadioGroupItem
-                                            value={candidate.id}
-                                            id={candidate.id}
-                                            className="mr-4"
-                                        />
-                                    </div>
-
-                                    <Avatar className="w-16 h-16 shrink-0">
-                                        <AvatarImage src={candidate.photo ?? undefined} />
-                                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                                            {candidate.name
-                                                .split(" ")
-                                                .map((n) => n[0])
-                                                .join("")}
-                                        </AvatarFallback>
-                                    </Avatar>
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div>
-                                                <h3 className="text-xl font-bold">{candidate.name}</h3>
-                                                <p className="text-muted-foreground">
-                                                    {candidate.position}
-                                                </p>
-                                                <Badge variant="outline" className="mt-1">
-                                                    {candidate.program}
-                                                </Badge>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-primary font-medium mb-3 italic">
-                                            &quot;{candidate.slogan}&quot;
-                                        </p>
-
-                                        <div>
-                                            <h4 className="font-medium mb-2">Priorités principales :</h4>
-                                            <ul className="space-y-1">
-                                                {candidate.priorities.slice(0, 3).map((priority, index) => (
-                                                    <li
-                                                        key={index}
-                                                        className="text-sm flex items-start"
-                                                    >
-                                                        <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-2 flex-shrink-0" />
-                                                        {priority}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
+                    {candidates.length === 0 ? (
+                        <Card>
+                            <CardContent className="p-8 text-center text-muted-foreground">
+                                Aucun candidat n'est inscrit pour le moment.
                             </CardContent>
                         </Card>
-                    ))}
+                    ) : (
+                        candidates.map((candidate) => (
+                            <Card
+                                key={candidate.id}
+                                className={`cursor-pointer transition-all ${
+                                    selectedCandidate === candidate.id
+                                        ? "border-primary bg-primary/5 shadow-md"
+                                        : "hover:shadow-sm"
+                                }`}
+                                onClick={() => setSelectedCandidate(candidate.id)}
+                            >
+                                <CardContent className="p-6">
+                                    <div className="flex items-start space-x-4">
+                                        <div className="flex items-center">
+                                            <RadioGroupItem
+                                                value={candidate.id}
+                                                id={candidate.id}
+                                                className="mr-4"
+                                            />
+                                        </div>
+
+                                        <Avatar className="w-16 h-16 shrink-0">
+                                            <AvatarImage src={candidate.avatar_url ?? undefined} />
+                                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                                                {candidate.display_name
+                                                    .split(" ")
+                                                    .map((n) => n[0])
+                                                    .join("")}
+                                            </AvatarFallback>
+                                        </Avatar>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div>
+                                                    <h3 className="text-xl font-bold">{candidate.display_name}</h3>
+                                                </div>
+                                            </div>
+
+                                            {candidate.bio && (
+                                                <p className="text-muted-foreground text-sm mt-2 whitespace-pre-wrap">
+                                                    {candidate.bio}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
                 </div>
             </RadioGroup>
 
@@ -281,7 +284,7 @@ export function VotePage({ onBack }: VotePageProps) {
                                 <div className="flex items-center space-x-2">
                                     <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
                                     <span className="font-medium">
-                                        Candidat sélectionné : {selectedCandidateData?.name}
+                                        Candidat sélectionné : {selectedCandidateData?.display_name}
                                     </span>
                                 </div>
                             ) : (
@@ -297,7 +300,7 @@ export function VotePage({ onBack }: VotePageProps) {
                         <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
                             <DialogTrigger asChild>
                                 <Button
-                                    disabled={!selectedCandidate}
+                                    disabled={!selectedCandidate || candidates.length === 0}
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                 >
                                     <Vote className="w-4 h-4 mr-2" />
@@ -319,7 +322,7 @@ export function VotePage({ onBack }: VotePageProps) {
                                                 <div className="flex items-center space-x-3">
                                                     <Avatar>
                                                         <AvatarFallback className="bg-primary/10 text-primary">
-                                                            {selectedCandidateData.name
+                                                            {selectedCandidateData.display_name
                                                                 .split(" ")
                                                                 .map((n) => n[0])
                                                                 .join("")}
@@ -327,11 +330,8 @@ export function VotePage({ onBack }: VotePageProps) {
                                                     </Avatar>
                                                     <div>
                                                         <h4 className="font-bold">
-                                                            {selectedCandidateData.name}
+                                                            {selectedCandidateData.display_name}
                                                         </h4>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {selectedCandidateData.program}
-                                                        </p>
                                                     </div>
                                                 </div>
                                             </CardContent>

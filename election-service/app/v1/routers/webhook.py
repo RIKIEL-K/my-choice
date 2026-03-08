@@ -50,5 +50,5 @@ async def user_created_webhook(
         return {"status": "already_exists", "user_id": str(payload.user_id)}
 
     display_name = payload.display_name or payload.email.split("@")[0]
-    await repo.create(user_id=payload.user_id, display_name=display_name)
+    await repo.create(user_id=payload.user_id, email=payload.email, display_name=display_name)
     return {"status": "created", "user_id": str(payload.user_id)}

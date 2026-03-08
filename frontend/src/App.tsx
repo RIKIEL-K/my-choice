@@ -8,6 +8,7 @@ import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { NotVerifiedPage } from "@/pages/NotVerifiedPage";
 import { VerifyTokenPage } from "@/pages/VerifyTokenPage";
 import { EditUserPage } from "@/pages/EditUserPage";
+import { VotePage } from "@/pages/VotePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ProtectedRoute } from "@/components/routes/ProtectedRoute";
 import { PublicOnlyRoute } from "@/components/routes/PublicOnlyRoute";
@@ -41,6 +42,11 @@ const routes = [
   {
     path: "/me/edit",
     element: <EditUserPage />,
+    isPrivate: true,
+  },
+  {
+    path: "/elections/:id/vote",
+    element: <VotePage />,
     isPrivate: true,
   },
 ];

@@ -17,7 +17,7 @@ function adaptElections(
   apiElections: ReturnType<typeof useElections>["elections"]
 ): Election[] {
   return apiElections.map((e) => ({
-    id: Number(e.id),
+    id: e.id,
     title: e.title,
     description: e.description ?? "",
     endDate: e.end_date,
@@ -98,7 +98,13 @@ export const HomePage: FC = () => {
           elections={elections}
           stats={stats}
           isLoading={isLoading}
-          onVoteClick={() => navigate("/elections")}
+          onVoteClick={(id) => {
+            if (id) {
+              navigate(`/elections/${id}/vote`);
+            } else if (elections.length > 0) {
+              navigate(`/elections/${elections[0].id}/vote`);
+            }
+          }}
           onCalendarClick={() => navigate("/elections/calendar")}
           onCandidatesClick={() => navigate("/elections/candidates")}
           onResultsClick={() => navigate("/elections/results")}

@@ -16,9 +16,9 @@ class ElectionUserRepository:
         return result.scalar_one_or_none()
 
     async def create(
-        self, user_id: str, display_name: str | None = None
+        self, user_id: str, email: str, display_name: str | None = None
     ) -> ElectionUser:
-        eu = ElectionUser(user_id=str(user_id), display_name=display_name)
+        eu = ElectionUser(user_id=str(user_id), email=email, display_name=display_name)
         self.session.add(eu)
         await self.session.commit()
         await self.session.refresh(eu)
