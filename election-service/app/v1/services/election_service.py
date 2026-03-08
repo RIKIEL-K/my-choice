@@ -18,6 +18,10 @@ def _candidate_to_read(c: Candidate, vote_count: int = 0) -> CandidateRead:
         display_name=c.display_name,
         bio=c.bio,
         avatar_url=c.avatar_url,
+        program=c.program,
+        position=c.position,
+        slogan=c.slogan,
+        priorities=c.priorities_list,
         vote_count=vote_count,
         created_at=c.created_at,
     )

@@ -5,6 +5,7 @@ import uuid
 from sqlalchemy import String, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
+import json
 
 
 class Candidate(Base, TimestampMixin):
@@ -21,6 +22,20 @@ class Candidate(Base, TimestampMixin):
     display_name: Mapped[str] = mapped_column(String(120), nullable=False)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    program: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    position: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    slogan: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # JSON-encoded list of strings: '["Priority A", "Priority B"]'
+    priorities: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    @property
+    def priorities_list(self) -> list[str]:
+        if not self.priorities:
+            return []
+        try:
+            return json.loads(self.priorities)
+        except Exception:
+            return []
 
     # Relations
     election: Mapped["Election"] = relationship(  # noqa: F821

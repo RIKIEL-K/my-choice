@@ -2,17 +2,7 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel
 from app.models.election import ElectionStatus
-
-
-class CandidateRead(BaseModel):
-    id: str
-    user_id: str
-    display_name: str
-    bio: str | None
-    avatar_url: str | None
-    vote_count: int = 0
-
-    model_config = {"from_attributes": True}
+from app.v1.schemas.candidate import CandidateRead
 
 
 class ElectionRead(BaseModel):

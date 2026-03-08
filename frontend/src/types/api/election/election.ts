@@ -10,6 +10,10 @@ export interface ElectionCandidate {
     display_name: string;
     bio?: string | null;
     avatar_url?: string | null;
+    program?: string | null;
+    position?: string | null;
+    slogan?: string | null;
+    priorities?: string[];
     vote_count: number;
     created_at: string; // ISO 8601
 }
@@ -18,14 +22,14 @@ export interface Election {
     id: string;
     title: string;
     description?: string | null;
-    start_date: string;    // ISO 8601
-    end_date: string;      // ISO 8601
+    start_date: string;
+    end_date: string;
     status: ElectionStatus;
     total_voters: number;
     vote_count: number;
-    participation: number; // 0-100 percentage
+    participation: number;
     candidates: ElectionCandidate[];
-    created_at: string;    // ISO 8601
+    created_at: string;
 }
 
 export interface ElectionStats {
@@ -42,7 +46,6 @@ export interface ElectionListResponse {
     size: number;
 }
 
-// ── Inputs ────────────────────────────────────────────────────────────────
 
 export interface ElectionCreate {
     title: string;

@@ -85,7 +85,7 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
 
     if (isLoading) {
         return (
-             <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin mb-4" />
                 <p>Chargement des données de l'élection...</p>
             </div>
@@ -227,11 +227,10 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                         candidates.map((candidate) => (
                             <Card
                                 key={candidate.id}
-                                className={`cursor-pointer transition-all ${
-                                    selectedCandidate === candidate.id
+                                className={`cursor-pointer transition-all ${selectedCandidate === candidate.id
                                         ? "border-primary bg-primary/5 shadow-md"
                                         : "hover:shadow-sm"
-                                }`}
+                                    }`}
                                 onClick={() => setSelectedCandidate(candidate.id)}
                             >
                                 <CardContent className="p-6">
@@ -258,13 +257,43 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                             <div className="flex items-start justify-between mb-2">
                                                 <div>
                                                     <h3 className="text-xl font-bold">{candidate.display_name}</h3>
+                                                    {candidate.position && (
+                                                        <p className="text-muted-foreground text-sm">{candidate.position}</p>
+                                                    )}
+                                                    {candidate.program && (
+                                                        <span className="inline-block mt-1 text-xs font-medium bg-primary/10 text-primary rounded-full px-2 py-0.5">
+                                                            {candidate.program}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
+
+                                            {candidate.slogan && (
+                                                <p className="text-primary font-medium italic mt-2 text-sm">
+                                                    &quot;{candidate.slogan}&quot;
+                                                </p>
+                                            )}
 
                                             {candidate.bio && (
                                                 <p className="text-muted-foreground text-sm mt-2 whitespace-pre-wrap">
                                                     {candidate.bio}
                                                 </p>
+                                            )}
+
+                                            {candidate.priorities && candidate.priorities.length > 0 && (
+                                                <div className="mt-3">
+                                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                                                        Priorités
+                                                    </h4>
+                                                    <ul className="space-y-1">
+                                                        {candidate.priorities.map((p, i) => (
+                                                            <li key={i} className="text-sm flex items-start gap-2">
+                                                                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                                                                {p}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

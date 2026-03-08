@@ -1,3 +1,4 @@
+import json
 import uuid
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,6 +43,10 @@ class CandidateRepository:
             display_name=data.display_name,
             bio=data.bio,
             avatar_url=data.avatar_url,
+            program=data.program,
+            position=data.position,
+            slogan=data.slogan,
+            priorities=json.dumps(data.priorities) if data.priorities else None,
         )
         self.session.add(candidate)
         await self.session.commit()
