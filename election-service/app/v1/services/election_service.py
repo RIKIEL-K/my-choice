@@ -27,7 +27,7 @@ def _candidate_to_read(c: Candidate, vote_count: int = 0) -> CandidateRead:
     )
 
 
-def _election_to_read(election: Election) -> ElectionRead:
+def _election_to_read(election: Election, has_voted: bool = False) -> ElectionRead:
     # Build vote count per candidate
     vote_counts: dict[str, int] = {}
     for v in election.votes:
@@ -49,6 +49,7 @@ def _election_to_read(election: Election) -> ElectionRead:
         participation=election.participation,
         candidates=candidates,
         created_at=election.created_at,
+        has_voted=has_voted,
     )
 
 
@@ -68,20 +69,32 @@ class ElectionService:
         status: ElectionStatus | None = None,
         page: int = 1,
         size: int = 20,
+        voter_id: str | None = None,
     ) -> ElectionListResponse:
         elections, total = await self.election_repo.get_all(status=status, page=page, size=size)
+        items = []
+        for e in elections:
+            hv = (
+                await self.vote_repo.has_voted(e.id, voter_id)
+                if voter_id else False
+            )
+            items.append(_election_to_read(e, has_voted=hv))
         return ElectionListResponse(
-            items=[_election_to_read(e) for e in elections],
+            items=items,
             total=total,
             page=page,
             size=size,
         )
 
-    async def get_election(self, election_id: str) -> ElectionRead:
+    async def get_election(self, election_id: str, voter_id: str | None = None) -> ElectionRead:
         election = await self.election_repo.get_by_id(election_id)
         if not election:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Election not found")
-        return _election_to_read(election)
+        hv = (
+            await self.vote_repo.has_voted(election_id, voter_id)
+            if voter_id else False
+        )
+        return _election_to_read(election, has_voted=hv)
 
     async def create_election(
         self, data: ElectionCreate, created_by: str | None = None

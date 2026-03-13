@@ -32,22 +32,25 @@ async def list_elections(
     status_filter: ElectionStatus | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    voter_id: str | None = Query(None, description="voter user_id to compute has_voted"),
     service: ElectionService = Depends(get_election_service),
 ):
     """
     Return a paginated list of elections.
     Filter by status: `draft`, `active`, or `closed`.
+    Pass `voter_id` to include has_voted flag per election.
     """
-    return await service.list_elections(status=status_filter, page=page, size=size)
+    return await service.list_elections(status=status_filter, page=page, size=size, voter_id=voter_id)
 
 
 @router.get("/{election_id}", response_model=ElectionRead, summary="Get election detail")
 async def get_election(
     election_id: uuid.UUID,
+    voter_id: str | None = Query(None, description="voter user_id to compute has_voted"),
     service: ElectionService = Depends(get_election_service),
 ):
     """Return a single election with its candidates and vote counts."""
-    return await service.get_election(election_id)
+    return await service.get_election(str(election_id), voter_id=voter_id)
 
 
 @router.post("", response_model=ElectionRead, status_code=status.HTTP_201_CREATED,

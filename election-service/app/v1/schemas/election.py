@@ -17,6 +17,7 @@ class ElectionRead(BaseModel):
     participation: float  # percentage 0-100
     candidates: list[CandidateRead] = []
     created_at: datetime
+    has_voted: bool = False  # True if the requesting user has already voted
 
     model_config = {"from_attributes": True}
 

@@ -30,6 +30,7 @@ export interface Election {
     participation: number;
     candidates: ElectionCandidate[];
     created_at: string;
+    has_voted: boolean; // True if the current user already voted in this election
 }
 
 export interface ElectionStats {

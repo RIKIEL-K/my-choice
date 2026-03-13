@@ -9,6 +9,8 @@ import { NotVerifiedPage } from "@/pages/NotVerifiedPage";
 import { VerifyTokenPage } from "@/pages/VerifyTokenPage";
 import { EditUserPage } from "@/pages/EditUserPage";
 import { VotePage } from "@/pages/VotePage";
+import { CandidatesPage } from "@/pages/CandidatesPage";
+import { CandidateProgramPage } from "@/pages/CandidateProgramPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ProtectedRoute } from "@/components/routes/ProtectedRoute";
 import { PublicOnlyRoute } from "@/components/routes/PublicOnlyRoute";
@@ -49,11 +51,21 @@ const routes = [
     element: <VotePage />,
     isPrivate: true,
   },
+  {
+    path: "/elections/candidates",
+    element: <CandidatesPage />,
+    isPrivate: true,
+  },
+  {
+    path: "/elections/candidates/:id/program",
+    element: <CandidateProgramPage />,
+    isPrivate: true,
+  },
 ];
 
 function App() {
   return (
-    <>
+    <div className="max-w-[1200px] mx-auto w-full">
       <ToastMessageHandler />
       <Routes>
         {routes.map((route) => {
@@ -68,7 +80,7 @@ function App() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </>
+    </div>
   );
 }
 

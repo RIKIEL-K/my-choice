@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import {
@@ -12,105 +13,181 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/Dialog";
-import { ArrowLeft, Vote, CheckCircle, AlertTriangle, Info, Clock, Loader2 } from "lucide-react";
+import {
+    ArrowLeft,
+    Vote,
+    CheckCircle,
+    CheckCircle2,
+    AlertTriangle,
+    Info,
+    Clock,
+} from "lucide-react";
 import toast from "react-hot-toast";
-import useSWR from "swr";
-import { electionFetcher } from "@/features/hooks/swr/fetcher/election/electionFetcher";
-import { electionClient } from "@/lib/electionClient";
-import type { Election } from "@/types/api/election/election";
-import { useUser } from "@/features/hooks/swr/fetcher/user/useUser";
-import { parseAxiosErrorMessage } from "@/lib/parseAxiosErrorMessage";
-import { ErrorDisplay } from "@/components/ui/ErrorDisplay";
-import axios from "axios";
+
+// ─────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────
 
 export interface VotePageProps {
     onBack: () => void;
+    /** The ID of the election, used for API submission. */
     electionId?: string;
+    /** The ID of the voter, used for API submission. */
+    voterId?: string;
+    /** Optional callback when vote is successfully submitted to the API. */
+    onSubmit?: (candidateId: string) => Promise<void>;
+    /** Real candidates from the API. If provided, replaces demo data. */
+    candidates?: Candidate[];
+    /** Whether the current user has already voted in this election. */
+    alreadyVoted?: boolean;
 }
 
-export function VotePage({ onBack, electionId }: VotePageProps) {
+export interface Candidate {
+    id: string;
+    name: string;
+    program: string;
+    position: string;
+    photo: string | null;
+    slogan: string;
+    priorities: string[];
+}
+
+// ─────────────────────────────────────────────────────────
+// Demo data (used in Storybook & when no real data is injected)
+// ─────────────────────────────────────────────────────────
+
+const defaultCandidates: Candidate[] = [
+    {
+        id: "sarah",
+        name: "Sarah Dupont",
+        program: "Renouveau Étudiant",
+        position: "Présidente",
+        photo: null,
+        slogan: "Ensemble pour un campus plus dynamique",
+        priorities: [
+            "Amélioration des équipements sportifs",
+            "Réduction des frais de restauration",
+            "Extension des horaires de la bibliothèque",
+        ],
+    },
+    {
+        id: "thomas",
+        name: "Thomas Martin",
+        program: "Ensemble Plus Loin",
+        position: "Président",
+        photo: null,
+        slogan: "Innovation et solidarité étudiante",
+        priorities: [
+            "Digitalisation des services étudiants",
+            "Création d'espaces de coworking",
+            "Programme de mentorat étudiant",
+        ],
+    },
+    {
+        id: "emma",
+        name: "Emma Rodriguez",
+        program: "Voix Étudiante",
+        position: "Vice-Présidente",
+        photo: null,
+        slogan: "Votre voix, notre engagement",
+        priorities: [
+            "Amélioration de la communication école-étudiants",
+            "Soutien aux étudiants internationaux",
+            "Développement du campus durable",
+        ],
+    },
+];
+
+// ─────────────────────────────────────────────────────────
+// Already-voted overlay
+// ─────────────────────────────────────────────────────────
+
+function AlreadyVotedBanner({ onBack }: { onBack: () => void }) {
+    return (
+        <div className="max-w-2xl mx-auto">
+            <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+                <CardContent className="pt-8 pb-8 text-center">
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-2">
+                        Vous avez déjà voté
+                    </h2>
+                    <p className="text-blue-700 dark:text-blue-300 mb-6">
+                        Votre vote a déjà été enregistré pour cette élection. Chaque
+                        participant ne peut voter qu&apos;une seule fois.
+                    </p>
+                    <div className="bg-background rounded-lg p-4 mb-6 border border-border text-sm text-muted-foreground">
+                        <div className="flex items-start space-x-2">
+                            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                            <p>
+                                Votre vote est anonyme et sécurisé. Il n&apos;est pas possible
+                                de le modifier une fois soumis. Vous pouvez consulter les
+                                résultats en temps réel.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button onClick={onBack} variant="outline">
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Retour au tableau de bord
+                        </Button>
+                        <Button variant="secondary">Voir les résultats</Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────
+
+export function VotePage({
+    onBack,
+    electionId,
+    voterId,
+    onSubmit,
+    candidates: propCandidates,
+    alreadyVoted = false,
+}: VotePageProps) {
     const [selectedCandidate, setSelectedCandidate] = useState<string>("");
     const [isVoting, setIsVoting] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
-    const [alreadyVoted, setAlreadyVoted] = useState(false);
 
-    const { user } = useUser();
+    const candidates = propCandidates ?? defaultCandidates;
+    const selectedCandidateData = candidates.find((c) => c.id === selectedCandidate);
 
-    const { data: election, error, isLoading } = useSWR<Election>(
-        electionId ? `/elections/${electionId}` : null,
-        electionFetcher
-    );
+    // ── Case 1: user has already voted (from the server) ──────────────
+    if (alreadyVoted) {
+        return <AlreadyVotedBanner onBack={onBack} />;
+    }
 
+    // ── Case 2: vote was just submitted in this session ────────────────
     const handleVoteSubmit = async () => {
-        if (!selectedCandidate || !electionId || !user) {
-            toast.error("Données manquantes ou utilisateur non authentifié");
+        if (!selectedCandidate) {
+            toast.error("Veuillez sélectionner un candidat");
             return;
         }
-
         setIsVoting(true);
-
         try {
-            await electionClient.post(`/elections/${electionId}/vote`, {
-                candidate_id: selectedCandidate
-            }, {
-                params: { voter_id: user.id }
-            });
+            if (onSubmit) {
+                await onSubmit(selectedCandidate);
+            }
             setVoteSubmitted(true);
             setShowConfirmation(false);
             toast.success("Votre vote a été enregistré avec succès !");
-        } catch (err) {
-            setShowConfirmation(false);
-            if (axios.isAxiosError(err) && err.response?.status === 409) {
-                setAlreadyVoted(true);
-            } else {
-                toast.error(parseAxiosErrorMessage(err));
-            }
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.detail ??
+                "Une erreur est survenue lors de l'envoi de votre vote."
+            );
         } finally {
             setIsVoting(false);
         }
     };
-
-    if (alreadyVoted) {
-        return (
-            <ErrorDisplay
-                status={409}
-                errorMessage="Vous avez déjà voté"
-                description="Vous avez déjà participé à cette élection. Un seul vote est autorisé par utilisateur."
-                onBack={onBack}
-                onBackLabel="Retour au tableau de bord"
-            />
-        );
-    }
-
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
-                <Loader2 className="w-8 h-8 animate-spin mb-4" />
-                <p>Chargement des données de l'élection...</p>
-            </div>
-        );
-    }
-
-    if (error || !election) {
-        return (
-            <div className="max-w-2xl mx-auto p-6">
-                <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-                    <CardContent className="pt-8 pb-8 text-center text-red-900 dark:text-red-100">
-                        <AlertTriangle className="w-8 h-8 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold mb-2">Erreur de chargement</h2>
-                        <p>Impossible de trouver cette élection ou elle n'est pas accessible.</p>
-                        <Button onClick={onBack} variant="outline" className="mt-6">
-                            Retour
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
-    const { candidates } = election;
-    const selectedCandidateData = candidates.find((c) => c.id === selectedCandidate);
 
     if (voteSubmitted) {
         return (
@@ -124,8 +201,9 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                             Vote Enregistré !
                         </h2>
                         <p className="text-green-700 dark:text-green-300 mb-6">
-                            Votre vote a été pris en compte et enregistré de manière sécurisée.
-                            Merci de votre participation à la démocratie étudiante.
+                            Votre vote a été pris en compte et enregistré de manière
+                            sécurisée. Merci de votre participation à la démocratie
+                            étudiante.
                         </p>
 
                         <div className="bg-background rounded-lg p-4 mb-6 border border-border">
@@ -133,7 +211,7 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                             <div className="space-y-2 text-sm text-muted-foreground">
                                 <div className="flex justify-between">
                                     <span>Élection :</span>
-                                    <span>{election.title}</span>
+                                    <span>Bureau des Étudiants 2024-2025</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Date et heure :</span>
@@ -153,15 +231,17 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                 <ArrowLeft className="w-4 h-4 mr-2" />
                                 Retour au tableau de bord
                             </Button>
+                            <Button variant="secondary">Voir les résultats</Button>
                         </div>
 
                         <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                             <div className="flex items-start space-x-2">
                                 <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-                                <p className="text-xs text-blue-700 dark:text-blue-300 text-left">
-                                    Votre vote est anonyme et sécurisé. Le numéro de confirmation ne
-                                    permet pas de connaître votre choix de vote, il sert uniquement
-                                    à vérifier que votre participation a bien été enregistrée.
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                    Votre vote est anonyme et sécurisé. Le numéro de
+                                    confirmation ne permet pas de connaître votre choix de
+                                    vote, il sert uniquement à vérifier que votre participation
+                                    a bien été enregistrée.
                                 </p>
                             </div>
                         </div>
@@ -171,25 +251,26 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
         );
     }
 
+    // ── Case 3: vote form ──────────────────────────────────────────────
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
-                <Button variant="ghost" onClick={onBack} className="self-start">
+            <div className="flex items-center space-x-4 mb-8">
+                <Button variant="ghost" onClick={onBack}>
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Retour
                 </Button>
                 <div className="flex-1">
-                    <h1 className="text-2xl font-bold">{election.title}</h1>
+                    <h1 className="text-2xl font-bold">
+                        Élection du Bureau des Étudiants
+                    </h1>
                     <p className="text-muted-foreground">
-                        {election.description || "Choisissez votre candidat"}
+                        Choisissez votre candidat pour l&apos;année 2024-2025
                     </p>
                 </div>
                 <div className="flex items-center space-x-2 text-orange-600 dark:text-orange-400">
                     <Clock className="w-4 h-4" />
-                    <span className="text-sm font-medium">
-                        Fin: {new Date(election.end_date).toLocaleDateString("fr-FR")}
-                    </span>
+                    <span className="text-sm font-medium">2j 5h restantes</span>
                 </div>
             </div>
 
@@ -203,9 +284,11 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                 Instructions de vote
                             </h3>
                             <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                <li>• Sélectionnez le candidat de votre choix en cliquant sur sa carte</li>
-                                <li>• Vous ne pouvez voter qu'une seule fois pour cette élection</li>
-                                <li>• Les candidats ne peuvent pas voter pour eux-mêmes</li>
+                                <li>
+                                    • Sélectionnez le candidat de votre choix en cliquant sur
+                                    sa carte
+                                </li>
+                                <li>• Vous ne pouvez voter qu&apos;une seule fois pour cette élection</li>
                                 <li>• Votre vote est anonyme et sécurisé</li>
                                 <li>• Vous pouvez changer votre choix avant de confirmer</li>
                             </ul>
@@ -214,97 +297,85 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                 </CardContent>
             </Card>
 
-            {/* Liste des candidats */}
+            {/* Candidate list */}
             <RadioGroup value={selectedCandidate} onValueChange={setSelectedCandidate}>
                 <div className="space-y-4">
-                    {candidates.length === 0 ? (
-                        <Card>
-                            <CardContent className="p-8 text-center text-muted-foreground">
-                                Aucun candidat n'est inscrit pour le moment.
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        candidates.map((candidate) => (
-                            <Card
-                                key={candidate.id}
-                                className={`cursor-pointer transition-all ${selectedCandidate === candidate.id
-                                        ? "border-primary bg-primary/5 shadow-md"
-                                        : "hover:shadow-sm"
-                                    }`}
-                                onClick={() => setSelectedCandidate(candidate.id)}
-                            >
-                                <CardContent className="p-6">
-                                    <div className="flex items-start space-x-4">
-                                        <div className="flex items-center">
-                                            <RadioGroupItem
-                                                value={candidate.id}
-                                                id={candidate.id}
-                                                className="mr-4"
-                                            />
+                    {candidates.map((candidate) => (
+                        <Card
+                            key={candidate.id}
+                            className={`cursor-pointer transition-all ${
+                                selectedCandidate === candidate.id
+                                    ? "border-primary bg-primary/5 shadow-md"
+                                    : "hover:shadow-sm"
+                            }`}
+                            onClick={() => setSelectedCandidate(candidate.id)}
+                        >
+                            <CardContent className="p-6">
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex items-center">
+                                        <RadioGroupItem
+                                            value={candidate.id}
+                                            id={candidate.id}
+                                            className="mr-4"
+                                        />
+                                    </div>
+
+                                    <Avatar className="w-16 h-16 shrink-0">
+                                        <AvatarImage src={candidate.photo ?? undefined} />
+                                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                                            {candidate.name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")}
+                                        </AvatarFallback>
+                                    </Avatar>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <h3 className="text-xl font-bold">
+                                                    {candidate.name}
+                                                </h3>
+                                                <p className="text-muted-foreground">
+                                                    {candidate.position}
+                                                </p>
+                                                <Badge variant="outline" className="mt-1">
+                                                    {candidate.program}
+                                                </Badge>
+                                            </div>
                                         </div>
 
-                                        <Avatar className="w-16 h-16 shrink-0">
-                                            <AvatarImage src={candidate.avatar_url ?? undefined} />
-                                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                                                {candidate.display_name
-                                                    .split(" ")
-                                                    .map((n) => n[0])
-                                                    .join("")}
-                                            </AvatarFallback>
-                                        </Avatar>
+                                        <p className="text-primary font-medium mb-3 italic">
+                                            &quot;{candidate.slogan}&quot;
+                                        </p>
 
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div>
-                                                    <h3 className="text-xl font-bold">{candidate.display_name}</h3>
-                                                    {candidate.position && (
-                                                        <p className="text-muted-foreground text-sm">{candidate.position}</p>
-                                                    )}
-                                                    {candidate.program && (
-                                                        <span className="inline-block mt-1 text-xs font-medium bg-primary/10 text-primary rounded-full px-2 py-0.5">
-                                                            {candidate.program}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {candidate.slogan && (
-                                                <p className="text-primary font-medium italic mt-2 text-sm">
-                                                    &quot;{candidate.slogan}&quot;
-                                                </p>
-                                            )}
-
-                                            {candidate.bio && (
-                                                <p className="text-muted-foreground text-sm mt-2 whitespace-pre-wrap">
-                                                    {candidate.bio}
-                                                </p>
-                                            )}
-
-                                            {candidate.priorities && candidate.priorities.length > 0 && (
-                                                <div className="mt-3">
-                                                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                                                        Priorités
-                                                    </h4>
-                                                    <ul className="space-y-1">
-                                                        {candidate.priorities.map((p, i) => (
-                                                            <li key={i} className="text-sm flex items-start gap-2">
-                                                                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                                                                {p}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
+                                        <div>
+                                            <h4 className="font-medium mb-2">
+                                                Priorités principales :
+                                            </h4>
+                                            <ul className="space-y-1">
+                                                {candidate.priorities
+                                                    .slice(0, 3)
+                                                    .map((priority, index) => (
+                                                        <li
+                                                            key={index}
+                                                            className="text-sm flex items-start"
+                                                        >
+                                                            <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-2 flex-shrink-0" />
+                                                            {priority}
+                                                        </li>
+                                                    ))}
+                                            </ul>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        ))
-                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
             </RadioGroup>
 
-            {/* Actions */}
+            {/* Action bar */}
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -313,7 +384,8 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                 <div className="flex items-center space-x-2">
                                     <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
                                     <span className="font-medium">
-                                        Candidat sélectionné : {selectedCandidateData?.display_name}
+                                        Candidat sélectionné :{" "}
+                                        {selectedCandidateData?.name}
                                     </span>
                                 </div>
                             ) : (
@@ -326,10 +398,14 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                             )}
                         </div>
 
-                        <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+                        {/* Confirm dialog */}
+                        <Dialog
+                            open={showConfirmation}
+                            onOpenChange={setShowConfirmation}
+                        >
                             <DialogTrigger asChild>
                                 <Button
-                                    disabled={!selectedCandidate || candidates.length === 0}
+                                    disabled={!selectedCandidate}
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                 >
                                     <Vote className="w-4 h-4 mr-2" />
@@ -351,7 +427,7 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                                 <div className="flex items-center space-x-3">
                                                     <Avatar>
                                                         <AvatarFallback className="bg-primary/10 text-primary">
-                                                            {selectedCandidateData.display_name
+                                                            {selectedCandidateData.name
                                                                 .split(" ")
                                                                 .map((n) => n[0])
                                                                 .join("")}
@@ -359,8 +435,11 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                                     </Avatar>
                                                     <div>
                                                         <h4 className="font-bold">
-                                                            {selectedCandidateData.display_name}
+                                                            {selectedCandidateData.name}
                                                         </h4>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {selectedCandidateData.program}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -372,9 +451,9 @@ export function VotePage({ onBack, electionId }: VotePageProps) {
                                     <div className="flex items-start space-x-2">
                                         <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
                                         <p className="text-sm text-orange-700 dark:text-orange-300">
-                                            <strong>Attention :</strong> Une fois confirmé, vous ne
-                                            pourrez plus modifier votre vote. Cette action est
-                                            définitive.
+                                            <strong>Attention :</strong> Une fois confirmé,
+                                            vous ne pourrez plus modifier votre vote. Cette
+                                            action est définitive.
                                         </p>
                                     </div>
                                 </div>

@@ -17,6 +17,10 @@ const meta: Meta<typeof VotePage> = {
     ],
     argTypes: {
         onBack: { action: "onBack" },
+        alreadyVoted: {
+            control: "boolean",
+            description: "Simule le cas où l'utilisateur a déjà voté.",
+        },
     },
 };
 
@@ -24,8 +28,18 @@ export default meta;
 
 type Story = StoryObj<typeof VotePage>;
 
+/** Formulaire de vote standard */
 export const Default: Story = {
     args: {
         onBack: () => {},
+        alreadyVoted: false,
+    },
+};
+
+/** L'utilisateur a déjà voté — affiche le banner informatif */
+export const AlreadyVoted: Story = {
+    args: {
+        onBack: () => {},
+        alreadyVoted: true,
     },
 };

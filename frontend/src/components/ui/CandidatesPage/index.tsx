@@ -28,8 +28,8 @@ export interface ElectionMock {
     description: string;
 }
 
-export interface CandidateMock {
-    id: number;
+export interface CandidateData {
+    id: string;
     name: string;
     position: string;
     program: string;
@@ -40,104 +40,28 @@ export interface CandidateMock {
     contact: string;
 }
 
-export interface CandidatesPageProps {
-    onViewProgram?: (candidateId: number) => void;
+export interface ElectionData {
+    id: string;
+    title: string;
+    description: string;
+    end_date: string;
+    candidates: CandidateData[];
 }
 
-const candidatesBureau: CandidateMock[] = [
-    {
-        id: 1,
-        name: "Sarah Dupont",
-        position: "Présidente",
-        program: "Renouveau Étudiant",
-        photo: null,
-        description:
-            "Étudiante en Master 2 Management, déléguée de classe depuis 3 ans.",
-        priorities: [
-            "Amélioration des équipements sportifs",
-            "Réduction des frais de restauration",
-            "Extension des horaires de la bibliothèque",
-        ],
-        experience:
-            "3 ans de délégation, membre du conseil étudiant",
-        contact: "sarah.dupont@ecole.fr",
-    },
-    {
-        id: 2,
-        name: "Thomas Martin",
-        position: "Président",
-        program: "Ensemble Plus Loin",
-        photo: null,
-        description:
-            "Étudiant en Master 1 Ingénierie, président du club informatique.",
-        priorities: [
-            "Digitalisation des services étudiants",
-            "Création d'espaces de coworking",
-            "Programme de mentorat étudiant",
-        ],
-        experience:
-            "2 ans en association étudiante, organisateur d'événements",
-        contact: "thomas.martin@ecole.fr",
-    },
-    {
-        id: 3,
-        name: "Emma Rodriguez",
-        position: "Vice-Présidente",
-        program: "Voix Étudiante",
-        photo: null,
-        description:
-            "Étudiante en Master 2 Communication, rédactrice du journal étudiant.",
-        priorities: [
-            "Amélioration de la communication école-étudiants",
-            "Soutien aux étudiants internationaux",
-            "Développement du campus durable",
-        ],
-        experience: "Journaliste étudiante, coordinatrice événements",
-        contact: "emma.rodriguez@ecole.fr",
-    },
-];
+export interface CandidatesPageProps {
+    elections?: ElectionData[];
+    onViewProgram?: (candidateId: string) => void;
+    isLoading?: boolean;
+}
 
-const candidatesConseil: CandidateMock[] = [
-    {
-        id: 4,
-        name: "Lucas Moreau",
-        position: "Représentant CA",
-        program: "Transparence Étudiante",
-        photo: null,
-        description:
-            "Étudiant en Master 1 Finance, trésorier de l'association étudiante.",
-        priorities: [
-            "Transparence des décisions du CA",
-            "Défense des droits étudiants",
-            "Amélioration des bourses",
-        ],
-        experience: "Trésorier associatif, membre commission finances",
-        contact: "lucas.moreau@ecole.fr",
-    },
-    {
-        id: 5,
-        name: "Léa Dubois",
-        position: "Représentante CA",
-        program: "Avenir Étudiant",
-        photo: null,
-        description:
-            "Étudiante en Master 2 RH, responsable des relations entreprises.",
-        priorities: [
-            "Renforcement des partenariats entreprises",
-            "Amélioration de l'insertion professionnelle",
-            "Développement de l'alternance",
-        ],
-        experience: "Relations entreprises, stage commission pédagogique",
-        contact: "lea.dubois@ecole.fr",
-    },
-];
+
 
 function CandidateCard({
     candidate,
     onViewProgram,
 }: {
-    candidate: CandidateMock;
-    onViewProgram?: (candidateId: number) => void;
+    candidate: CandidateData;
+    onViewProgram?: (candidateId: string) => void;
 }) {
     return (
         <Card className="h-full">
@@ -215,7 +139,10 @@ function CandidateCard({
     );
 }
 
-export function CandidatesPage({ onViewProgram }: CandidatesPageProps = {}) {
+export function CandidatesPage({ elections = [], onViewProgram, isLoading }: CandidatesPageProps = {}) {
+    // If no elections exist, just show one default tab to avoid broken UI
+    const defaultTab = elections.length > 0 ? elections[0].id : "none";
+
     return (
         <div className="space-y-8">
             <div className="text-center">
@@ -226,82 +153,63 @@ export function CandidatesPage({ onViewProgram }: CandidatesPageProps = {}) {
                 </p>
             </div>
 
-            <Tabs defaultValue="bureau" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="bureau" className="flex items-center space-x-2">
-                        <Users className="w-4 h-4" />
-                        <span>Bureau des Étudiants</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="conseil" className="flex items-center space-x-2">
-                        <GraduationCap className="w-4 h-4" />
-                        <span>Conseil d'Administration</span>
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="bureau" className="space-y-6">
-                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                        <h2 className="text-xl mb-2">
-                            Bureau des Étudiants 2024-2025
-                        </h2>
-                        <p className="text-muted-foreground mb-4">
-                            Élection du président, vice-président et secrétaire
-                            général qui représenteront l'ensemble des étudiants.
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                            <div className="flex items-center">
-                                <Calendar className="w-4 h-4 mr-1 shrink-0" />
-                                Fin des votes : 15 décembre 2024
-                            </div>
-                            <div className="flex items-center">
-                                <Users className="w-4 h-4 mr-1 shrink-0" />
-                                {candidatesBureau.length} candidats
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {candidatesBureau.map((candidate) => (
-                            <CandidateCard
-                                key={candidate.id}
-                                candidate={candidate}
-                                onViewProgram={onViewProgram}
-                            />
+            {isLoading ? (
+                <div className="flex justify-center p-8">
+                    <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                </div>
+            ) : elections.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12">
+                    <p>Aucune élection ou candidat n'est disponible pour le moment.</p>
+                </div>
+            ) : (
+                <Tabs defaultValue={defaultTab} className="w-full">
+                    <TabsList className={`flex flex-wrap w-full justify-start h-auto`}>
+                        {elections.map((election) => (
+                            <TabsTrigger key={`tab-${election.id}`} value={election.id} className="flex-1 min-w-[200px] flex items-center justify-center space-x-2 py-2">
+                                <Users className="w-4 h-4" />
+                                <span className="truncate">{election.title}</span>
+                            </TabsTrigger>
                         ))}
-                    </div>
-                </TabsContent>
+                    </TabsList>
 
-                <TabsContent value="conseil" className="space-y-6">
-                    <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-6 border border-green-200 dark:border-green-800">
-                        <h2 className="text-xl mb-2">
-                            Représentants au Conseil d'Administration
-                        </h2>
-                        <p className="text-muted-foreground mb-4">
-                            Élection de 3 représentants étudiants qui siégeront
-                            au conseil d'administration de l'école.
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                            <div className="flex items-center">
-                                <Calendar className="w-4 h-4 mr-1 shrink-0" />
-                                Fin des votes : 20 décembre 2024
+                    {elections.map((election) => (
+                        <TabsContent key={`content-${election.id}`} value={election.id} className="space-y-6">
+                            <div className="bg-primary/5 rounded-lg p-6 border border-primary/10">
+                                <h2 className="text-xl mb-2">{election.title}</h2>
+                                <p className="text-muted-foreground mb-4">
+                                    {election.description}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                                    <div className="flex items-center">
+                                        <Calendar className="w-4 h-4 mr-1 shrink-0" />
+                                        Fin des votes : {new Date(election.end_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </div>
+                                    <div className="flex items-center">
+                                        <Users className="w-4 h-4 mr-1 shrink-0" />
+                                        {election.candidates.length} candidats
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center">
-                                <Users className="w-4 h-4 mr-1 shrink-0" />
-                                {candidatesConseil.length} candidats pour 3 postes
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {candidatesConseil.map((candidate) => (
-                            <CandidateCard
-                                key={candidate.id}
-                                candidate={candidate}
-                                onViewProgram={onViewProgram}
-                            />
-                        ))}
-                    </div>
-                </TabsContent>
-            </Tabs>
+                            {election.candidates.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {election.candidates.map((candidate) => (
+                                        <CandidateCard
+                                            key={candidate.id}
+                                            candidate={candidate}
+                                            onViewProgram={onViewProgram}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground bg-card border rounded-lg">
+                                    Aucun candidat ne s'est encore présenté pour cette élection.
+                                </div>
+                            )}
+                        </TabsContent>
+                    ))}
+                </Tabs>
+            )}
 
             <Card>
                 <CardHeader>

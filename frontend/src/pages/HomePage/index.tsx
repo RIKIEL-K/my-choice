@@ -17,7 +17,7 @@ function adaptElections(
   apiElections: ReturnType<typeof useElections>["elections"]
 ): Election[] {
   return apiElections.map((e) => ({
-    id: e.id,
+    id: String(e.id),
     title: e.title,
     description: e.description ?? "",
     endDate: e.end_date,
@@ -29,6 +29,7 @@ function adaptElections(
     voted: e.vote_count,
     status: e.status,
     candidates: e.candidates.length,
+    hasVoted: e.has_voted ?? false,
   }));
 }
 
@@ -77,7 +78,7 @@ export const HomePage: FC = () => {
   const { onLogout } = useLogout();
   const navigate = useNavigate();
 
-  const { elections: apiElections, isLoading: electionsLoading } = useElections();
+  const { elections: apiElections, isLoading: electionsLoading } = useElections(user?.id as string | undefined);
   const { stats: apiStats, isLoading: statsLoading } = useElectionStats();
 
   if (!user) return null;
@@ -93,18 +94,12 @@ export const HomePage: FC = () => {
         onEditProfile={() => navigate("/me/edit")}
         onLogout={onLogout}
       />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <VotingDashboard
           elections={elections}
           stats={stats}
           isLoading={isLoading}
-          onVoteClick={(id) => {
-            if (id) {
-              navigate(`/elections/${id}/vote`);
-            } else if (elections.length > 0) {
-              navigate(`/elections/${elections[0].id}/vote`);
-            }
-          }}
+          onVoteClick={(electionId) => navigate(`/elections/${electionId}/vote`)}
           onCalendarClick={() => navigate("/elections/calendar")}
           onCandidatesClick={() => navigate("/elections/candidates")}
           onResultsClick={() => navigate("/elections/results")}

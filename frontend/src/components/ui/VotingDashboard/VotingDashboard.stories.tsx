@@ -3,9 +3,9 @@ import { Vote, Users, TrendingUp, Trophy } from "lucide-react";
 import { VotingDashboard } from "./index";
 import type { Election, Stat } from "./index";
 
-// -----------------------------------------------------------------------
-// Mock data for Storybook
-// -----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────
+// Mock data
+// ─────────────────────────────────────────────────────────
 
 const mockStats: Stat[] = [
     { title: "Élections actives", value: "2", icon: Vote, change: "+1", color: "text-blue-600" },
@@ -15,7 +15,7 @@ const mockStats: Stat[] = [
 ];
 
 const electionBureau: Election = {
-    id: 1,
+    id: "1",
     title: "Élection du Bureau des Étudiants",
     description: "Élection du président, vice-président et secrétaire général",
     endDate: "2024-12-15",
@@ -24,10 +24,11 @@ const electionBureau: Election = {
     voted: 1608,
     status: "active",
     candidates: 6,
+    hasVoted: false,
 };
 
 const electionConseil: Election = {
-    id: 2,
+    id: "2",
     title: "Élection du Conseil Pédagogique",
     description: "Représentants étudiants au conseil pédagogique",
     endDate: "2024-12-20",
@@ -36,11 +37,19 @@ const electionConseil: Election = {
     voted: 1008,
     status: "active",
     candidates: 4,
+    hasVoted: false,
 };
 
-// -----------------------------------------------------------------------
+const electionAlreadyVoted: Election = {
+    ...electionBureau,
+    id: "3",
+    title: "Élection de l'Association Culturelle",
+    hasVoted: true,
+};
+
+// ─────────────────────────────────────────────────────────
 // Meta
-// -----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────
 
 const meta: Meta<typeof VotingDashboard> = {
     title: "Pages/VotingDashboard",
@@ -59,26 +68,46 @@ const meta: Meta<typeof VotingDashboard> = {
 export default meta;
 type Story = StoryObj<typeof VotingDashboard>;
 
-// -----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────
 // Stories
-// -----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────
 
+/** Une seule élection, pas encore voté */
 export const Default: Story = {
     args: {
         elections: [electionBureau],
         stats: mockStats,
-        closingInDays: 3,
     },
 };
 
+/** Plusieurs élections sélectionnables (radio-style) */
 export const MultipleElections: Story = {
     args: {
         elections: [electionBureau, electionConseil],
         stats: mockStats,
-        closingInDays: 7,
     },
 };
 
+/** Mix d'élections : l'une déjà votée, l'autre pas */
+export const PartiallyVoted: Story = {
+    args: {
+        elections: [electionAlreadyVoted, electionConseil],
+        stats: mockStats,
+    },
+};
+
+/** Toutes les élections déjà votées */
+export const AllVoted: Story = {
+    args: {
+        elections: [
+            { ...electionBureau, hasVoted: true },
+            { ...electionConseil, hasVoted: true },
+        ],
+        stats: mockStats,
+    },
+};
+
+/** Chargement */
 export const Loading: Story = {
     args: {
         elections: [],
@@ -87,10 +116,10 @@ export const Loading: Story = {
     },
 };
 
+/** Aucune élection en cours */
 export const NoElections: Story = {
     args: {
         elections: [],
         stats: mockStats,
-        closingInDays: 0,
     },
 };

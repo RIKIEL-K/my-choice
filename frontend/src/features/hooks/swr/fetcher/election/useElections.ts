@@ -6,9 +6,14 @@ import type { ElectionListResponse, ElectionStats } from "@/types/api/election/e
  * Hook to fetch the list of active elections from the election microservice.
  * SWR automatically revalidates on focus and on interval.
  */
-export function useElections() {
+export function useElections(voterId?: string) {
+    const query = new URLSearchParams({ status: "active" });
+    if (voterId) {
+        query.append("voter_id", voterId);
+    }
+
     const { data, error, isLoading, mutate } = useSWR<ElectionListResponse>(
-        "/elections?status=active",
+        `/elections?${query.toString()}`,
         electionFetcher,
         {
             refreshInterval: 30_000, // re-fetch every 30s for live participation updates
