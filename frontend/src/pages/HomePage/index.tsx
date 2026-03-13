@@ -75,7 +75,6 @@ function adaptStats(
 
 export const HomePage: FC = () => {
   const { user } = useVerifiedUser();
-  const { onLogout } = useLogout();
   const navigate = useNavigate();
 
   const { elections: apiElections, isLoading: electionsLoading } = useElections(user?.id as string | undefined);
@@ -88,24 +87,17 @@ export const HomePage: FC = () => {
   const stats = adaptStats(isLoading ? undefined : apiStats);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
-        title={serviceName}
-        onEditProfile={() => navigate("/me/edit")}
-        onLogout={onLogout}
+    <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <VotingDashboard
+        elections={elections}
+        stats={stats}
+        isLoading={isLoading}
+        onVoteClick={(electionId) => navigate(`/elections/${electionId}/vote`)}
+        onCalendarClick={() => navigate("/elections/calendar")}
+        onCandidatesClick={() => navigate("/elections/candidates")}
+        onResultsClick={() => navigate("/elections/results")}
+        onNextElectionsClick={() => navigate("/elections/upcoming")}
       />
-      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <VotingDashboard
-          elections={elections}
-          stats={stats}
-          isLoading={isLoading}
-          onVoteClick={(electionId) => navigate(`/elections/${electionId}/vote`)}
-          onCalendarClick={() => navigate("/elections/calendar")}
-          onCandidatesClick={() => navigate("/elections/candidates")}
-          onResultsClick={() => navigate("/elections/results")}
-          onNextElectionsClick={() => navigate("/elections/upcoming")}
-        />
-      </main>
-    </div>
+    </main>
   );
 };
