@@ -40,6 +40,8 @@ export interface VotePageProps {
     candidates?: Candidate[];
     /** Whether the current user has already voted in this election. */
     alreadyVoted?: boolean;
+    /** Total number of votes cast in this election. */
+    totalVotes?: number;
 }
 
 export interface Candidate {
@@ -50,6 +52,8 @@ export interface Candidate {
     photo: string | null;
     slogan: string;
     priorities: string[];
+    /** Number of votes this candidate has received. */
+    voteCount: number;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -69,6 +73,7 @@ const defaultCandidates: Candidate[] = [
             "Réduction des frais de restauration",
             "Extension des horaires de la bibliothèque",
         ],
+        voteCount: 0,
     },
     {
         id: "thomas",
@@ -82,6 +87,7 @@ const defaultCandidates: Candidate[] = [
             "Création d'espaces de coworking",
             "Programme de mentorat étudiant",
         ],
+        voteCount: 0,
     },
     {
         id: "emma",
@@ -95,6 +101,7 @@ const defaultCandidates: Candidate[] = [
             "Soutien aux étudiants internationaux",
             "Développement du campus durable",
         ],
+        voteCount: 0,
     },
 ];
 
@@ -151,6 +158,7 @@ export function VotePage({
     onSubmit,
     candidates: propCandidates,
     alreadyVoted = false,
+    totalVotes,
 }: VotePageProps) {
     const [selectedCandidate, setSelectedCandidate] = useState<string>("");
     const [isVoting, setIsVoting] = useState(false);
@@ -300,78 +308,96 @@ export function VotePage({
             {/* Candidate list */}
             <RadioGroup value={selectedCandidate} onValueChange={setSelectedCandidate}>
                 <div className="space-y-4">
-                    {candidates.map((candidate) => (
-                        <Card
-                            key={candidate.id}
-                            className={`cursor-pointer transition-all ${
-                                selectedCandidate === candidate.id
-                                    ? "border-primary bg-primary/5 shadow-md"
-                                    : "hover:shadow-sm"
-                            }`}
-                            onClick={() => setSelectedCandidate(candidate.id)}
-                        >
-                            <CardContent className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex items-center">
-                                        <RadioGroupItem
-                                            value={candidate.id}
-                                            id={candidate.id}
-                                            className="mr-4"
-                                        />
-                                    </div>
+                    {candidates.map((candidate) => {
+                        const isSelected = selectedCandidate === candidate.id;
+                        return (
+                            <Card
+                                key={candidate.id}
+                                className={`cursor-pointer transition-all duration-200 ${
+                                    isSelected
+                                        ? "border-primary bg-primary/5 shadow-md"
+                                        : "hover:shadow-sm"
+                                }`}
+                                onClick={() => setSelectedCandidate(candidate.id)}
+                            >
+                                <CardContent className="p-6">
+                                    <div className="flex items-start space-x-4">
+                                        <div className="flex items-center">
+                                            <RadioGroupItem
+                                                value={candidate.id}
+                                                id={candidate.id}
+                                                className="mr-4"
+                                            />
+                                        </div>
 
-                                    <Avatar className="w-16 h-16 shrink-0">
-                                        <AvatarImage src={candidate.photo ?? undefined} />
-                                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                                            {candidate.name
-                                                .split(" ")
-                                                .map((n) => n[0])
-                                                .join("")}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                        <Avatar className="w-16 h-16 shrink-0">
+                                            <AvatarImage src={candidate.photo ?? undefined} />
+                                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                                                {candidate.name
+                                                    .split(" ")
+                                                    .map((n) => n[0])
+                                                    .join("")}
+                                            </AvatarFallback>
+                                        </Avatar>
 
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div>
+                                                    <h3 className="text-xl font-bold">
+                                                        {candidate.name}
+                                                    </h3>
+                                                    <p className="text-muted-foreground">
+                                                        {candidate.position}
+                                                    </p>
+                                                    <Badge variant="outline" className="mt-1">
+                                                        {candidate.program}
+                                                    </Badge>
+                                                </div>
+
+                                                {/* Vote count badge — visible only when this candidate is selected */}
+                                                <div
+                                                    className={`transition-all duration-300 ${
+                                                        isSelected
+                                                            ? "opacity-100 translate-y-0"
+                                                            : "opacity-0 -translate-y-1 pointer-events-none"
+                                                    }`}
+                                                >
+                                                    <Badge className="bg-primary/10 text-primary border border-primary/20 text-sm font-semibold px-3 py-1">
+                                                        <Vote className="w-3.5 h-3.5 mr-1.5 inline-block" />
+                                                        {candidate.voteCount.toLocaleString("fr-FR")}{" "}
+                                                        {candidate.voteCount === 1 ? "vote" : "votes"}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-primary font-medium mb-3 italic">
+                                                &quot;{candidate.slogan}&quot;
+                                            </p>
+
                                             <div>
-                                                <h3 className="text-xl font-bold">
-                                                    {candidate.name}
-                                                </h3>
-                                                <p className="text-muted-foreground">
-                                                    {candidate.position}
-                                                </p>
-                                                <Badge variant="outline" className="mt-1">
-                                                    {candidate.program}
-                                                </Badge>
+                                                <h4 className="font-medium mb-2">
+                                                    Priorités principales :
+                                                </h4>
+                                                <ul className="space-y-1">
+                                                    {candidate.priorities
+                                                        .slice(0, 3)
+                                                        .map((priority, index) => (
+                                                            <li
+                                                                key={index}
+                                                                className="text-sm flex items-start"
+                                                            >
+                                                                <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-2 flex-shrink-0" />
+                                                                {priority}
+                                                            </li>
+                                                        ))}
+                                                </ul>
                                             </div>
                                         </div>
-
-                                        <p className="text-primary font-medium mb-3 italic">
-                                            &quot;{candidate.slogan}&quot;
-                                        </p>
-
-                                        <div>
-                                            <h4 className="font-medium mb-2">
-                                                Priorités principales :
-                                            </h4>
-                                            <ul className="space-y-1">
-                                                {candidate.priorities
-                                                    .slice(0, 3)
-                                                    .map((priority, index) => (
-                                                        <li
-                                                            key={index}
-                                                            className="text-sm flex items-start"
-                                                        >
-                                                            <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-2 flex-shrink-0" />
-                                                            {priority}
-                                                        </li>
-                                                    ))}
-                                            </ul>
-                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
             </RadioGroup>
 
@@ -379,22 +405,31 @@ export function VotePage({
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center space-x-2">
-                            {selectedCandidate ? (
-                                <div className="flex items-center space-x-2">
-                                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
-                                    <span className="font-medium">
-                                        Candidat sélectionné :{" "}
-                                        {selectedCandidateData?.name}
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className="flex items-center space-x-2">
-                                    <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0" />
-                                    <span className="text-muted-foreground">
-                                        Veuillez sélectionner un candidat
-                                    </span>
-                                </div>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center space-x-2">
+                                {selectedCandidate ? (
+                                    <div className="flex items-center space-x-2">
+                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+                                        <span className="font-medium">
+                                            Candidat sélectionné :{" "}
+                                            {selectedCandidateData?.name}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center space-x-2">
+                                        <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0" />
+                                        <span className="text-muted-foreground">
+                                            Veuillez sélectionner un candidat
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            {totalVotes !== undefined && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Vote className="w-3 h-3" />
+                                    {totalVotes.toLocaleString("fr-FR")}{" "}
+                                    {totalVotes === 1 ? "vote exprimé" : "votes exprimés"} au total
+                                </p>
                             )}
                         </div>
 

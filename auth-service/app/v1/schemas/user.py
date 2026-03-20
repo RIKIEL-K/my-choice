@@ -10,6 +10,7 @@ class UserRead(schemas.CreateUpdateDictModel, Generic[models.ID]):
     id: uuid.UUID
     email: EmailStr
     is_verified: bool = False
+    role: str = "user"
 
     model_config = ConfigDict(from_attributes=True)
 

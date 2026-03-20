@@ -7,9 +7,12 @@ type PublicOnlyRouteProps = {
 };
 
 export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, role } = useAuth();
 
   if (isLoggedIn) {
+    if (role === "admin" || role === "superadmin") {
+      return <Navigate to="/admin" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

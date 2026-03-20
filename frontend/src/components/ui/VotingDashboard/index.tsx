@@ -43,10 +43,28 @@ export interface Stat {
     color: string;
 }
 
+/** Fresh vote counts fetched directly from GET /elections/:id for the currently selected election. */
+export interface SelectedElectionDetail {
+    voted: number;
+    totalVoters: number;
+    participation: number;
+    candidates: number;
+}
+
 export interface VotingDashboardProps {
     elections: Election[];
     stats: Stat[];
     isLoading?: boolean;
+    /** Controlled selected election ID. If provided, the parent manages selection state. */
+    selectedId?: string;
+    /** Called when the user selects a different election. */
+    onElectionSelect?: (id: string) => void;
+    /**
+     * Fresh counts fetched from GET /elections/:id for the selected election.
+     * When provided, the stats panel always shows DB-accurate data instead
+     * of the (potentially stale) list response.
+     */
+    selectedElectionDetail?: SelectedElectionDetail;
     onVoteClick?: (electionId: string) => void;
     onCalendarClick?: () => void;
     onCandidatesClick?: () => void;
@@ -64,58 +82,68 @@ const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
 
 interface ElectionStatsProps {
     election: Election;
+    /** When provided, overrides the vote counts with fresh DB data. */
+    liveStats?: SelectedElectionDetail;
 }
 
-const ElectionStats: React.FC<ElectionStatsProps> = ({ election }) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Participation */}
-        <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Participation</span>
-                <span className="font-medium">{election.participation}%</span>
-            </div>
-            <Progress value={election.participation} className="h-2" />
-            <p className="text-xs text-muted-foreground">
-                {election.voted.toLocaleString("fr-FR")} /{" "}
-                {election.totalVoters.toLocaleString("fr-FR")} étudiants ont voté
-            </p>
-        </div>
+const ElectionStats: React.FC<ElectionStatsProps> = ({ election, liveStats }) => {
+    // Prefer live (freshly fetched) stats when available, fall back to list data
+    const voted = liveStats?.voted ?? election.voted;
+    const totalVoters = liveStats?.totalVoters ?? election.totalVoters;
+    const participation = liveStats?.participation ?? election.participation;
+    const candidateCount = liveStats?.candidates ?? election.candidates;
 
-        {/* Candidates / Days remaining */}
-        <div className="flex items-center space-x-8">
-            <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{election.candidates}</p>
-                <p className="text-xs text-muted-foreground">Candidats</p>
-            </div>
-            <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">
-                    {Math.max(
-                        0,
-                        Math.ceil(
-                            (new Date(election.endDate).getTime() - Date.now()) /
-                                (1000 * 60 * 60 * 24)
-                        )
-                    )}
-                </p>
-                <p className="text-xs text-muted-foreground">Jours restants</p>
-            </div>
-        </div>
-
-        {/* Closing date */}
-        <div className="flex items-center justify-end">
-            <div className="text-right">
-                <p className="text-sm text-muted-foreground">Fermeture le</p>
-                <p className="font-medium">
-                    {new Date(election.endDate).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                    })}
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Participation */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Participation</span>
+                    <span className="font-medium">{participation}%</span>
+                </div>
+                <Progress value={participation} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                    {voted.toLocaleString("fr-FR")} /{" "}
+                    {totalVoters.toLocaleString("fr-FR")} étudiants ont voté
                 </p>
             </div>
+
+            {/* Candidates / Days remaining */}
+            <div className="flex items-center space-x-8">
+                <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{candidateCount}</p>
+                    <p className="text-xs text-muted-foreground">Candidats</p>
+                </div>
+                <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">
+                        {Math.max(
+                            0,
+                            Math.ceil(
+                                (new Date(election.endDate).getTime() - Date.now()) /
+                                    (1000 * 60 * 60 * 24)
+                            )
+                        )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Jours restants</p>
+                </div>
+            </div>
+
+            {/* Closing date */}
+            <div className="flex items-center justify-end">
+                <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Fermeture le</p>
+                    <p className="font-medium">
+                        {new Date(election.endDate).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                        })}
+                    </p>
+                </div>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // ─────────────────────────────────────────────────────────
 // Main component
@@ -125,17 +153,32 @@ export const VotingDashboard: React.FC<VotingDashboardProps> = ({
     elections,
     stats,
     isLoading = false,
+    selectedId: controlledSelectedId,
+    onElectionSelect,
+    selectedElectionDetail,
     onVoteClick,
     onCalendarClick,
     onCandidatesClick,
     onResultsClick,
     onNextElectionsClick,
 }) => {
-    const [selectedId, setSelectedId] = useState<string>(
+    // Internal state used only when the component is uncontrolled (e.g. Storybook).
+    const [internalSelectedId, setInternalSelectedId] = useState<string>(
         elections[0]?.id ?? ""
     );
 
-    // Keep selectedId valid when elections list changes
+    // Derive effective selected ID: controlled prop takes priority.
+    const selectedId = controlledSelectedId ?? internalSelectedId;
+
+    const handleSelect = (id: string) => {
+        if (onElectionSelect) {
+            onElectionSelect(id);
+        } else {
+            setInternalSelectedId(id);
+        }
+    };
+
+    // Keep selectedElection in sync with the effective selectedId
     const selectedElection =
         elections.find((e) => e.id === selectedId) ?? elections[0] ?? null;
 
@@ -263,7 +306,7 @@ export const VotingDashboard: React.FC<VotingDashboardProps> = ({
                                             ? "border-l-blue-600 bg-blue-50/50 dark:bg-blue-950/20 shadow-md ring-1 ring-blue-200 dark:ring-blue-800"
                                             : "border-l-gray-200 hover:border-l-blue-300 hover:shadow-sm"
                                     }`}
-                                    onClick={() => setSelectedId(election.id)}
+                                    onClick={() => handleSelect(election.id)}
                                 >
                                     <CardHeader>
                                         <div className="flex items-start justify-between">
@@ -335,7 +378,10 @@ export const VotingDashboard: React.FC<VotingDashboardProps> = ({
                                     {isSelected && (
                                         <CardContent className="pt-0">
                                             <div className="border-t border-border pt-4">
-                                                <ElectionStats election={election} />
+                                                <ElectionStats
+                                                    election={election}
+                                                    liveStats={selectedElectionDetail}
+                                                />
                                             </div>
                                         </CardContent>
                                     )}

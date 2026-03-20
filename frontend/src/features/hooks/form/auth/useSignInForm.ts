@@ -20,10 +20,21 @@ export function useSignInForm() {
         scope: "",
         grant_type: "password",
       });
+      // After login, fetch the basic user data to navigate to the correct page immediately
+      const user = await import("@/features/hooks/swr/fetcher/fetcher").then(m => m.fetcher("/users/me"));
+      
       setIsLoggedIn(true);
-      navigate("/", {
-        state: { successMessage: "Logged in successfully" },
-      });
+      const userRole = (user as any)?.role || "user";
+      
+      if (userRole === "admin" || userRole === "superadmin") {
+        navigate("/admin", {
+          state: { successMessage: "Logged in successfully as admin" },
+        });
+      } else {
+        navigate("/", {
+          state: { successMessage: "Logged in successfully" },
+        });
+      }
     } catch (error) {
       setErrorMessage(parseAxiosErrorMessage(error));
     }

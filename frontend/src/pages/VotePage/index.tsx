@@ -27,14 +27,37 @@ export function VotePage() {
         photo: c.avatar_url ?? null,
         slogan: c.slogan ?? "",
         priorities: c.priorities ?? [],
+        voteCount: c.vote_count,
     }));
 
     const handleSubmit = async (candidateId: string) => {
         if (!id || !user) throw new Error("Missing context");
+
+        // Optimistic update: reflect the new vote immediately in the UI
+        // before the API response arrives (revalidate: false to skip refetch).
+        await mutate(
+            (current) => {
+                if (!current) return current;
+                return {
+                    ...current,
+                    vote_count: current.vote_count + 1,
+                    has_voted: true,
+                    candidates: current.candidates.map((c) =>
+                        c.id === candidateId
+                            ? { ...c, vote_count: c.vote_count + 1 }
+                            : c
+                    ),
+                };
+            },
+            { revalidate: false }
+        );
+
+        // Cast the actual vote on the server
         await electionClient.post(`/elections/${id}/vote?voter_id=${user.id}`, {
             candidate_id: candidateId,
         });
-        // Revalidate the election data so has_voted becomes true globally
+
+        // Revalidate the election data so counts are in sync with the server
         await mutate();
     };
 
@@ -45,6 +68,7 @@ export function VotePage() {
             voterId={user?.id as string | undefined}
             candidates={candidates}
             alreadyVoted={election?.has_voted ?? false}
+            totalVotes={election?.vote_count}
             onSubmit={handleSubmit}
         />
     );

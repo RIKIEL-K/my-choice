@@ -12,8 +12,10 @@ import { VotePage } from "@/pages/VotePage";
 import { CandidatesPage } from "@/pages/CandidatesPage";
 import { CandidateProgramPage } from "@/pages/CandidateProgramPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
 import { ProtectedRoute } from "@/components/routes/ProtectedRoute";
 import { PublicOnlyRoute } from "@/components/routes/PublicOnlyRoute";
+import { AdminRoute } from "@/components/routes/AdminRoute";
 import { ToastMessageHandler } from "@/components/common/ToastMessageHandler";
 
 const routes = [
@@ -61,6 +63,11 @@ const routes = [
     element: <CandidateProgramPage />,
     isPrivate: true,
   },
+  {
+    path: "/admin",
+    element: <AdminDashboardPage />,
+    isAdmin: true,
+  },
 ];
 
 function App() {
@@ -69,12 +76,14 @@ function App() {
       <ToastMessageHandler />
       <Routes>
         {routes.map((route) => {
-          // isPrivate is a boolean that indicates if the route is private or not
-          const element = route.isPrivate ? (
-            <ProtectedRoute>{route.element}</ProtectedRoute>
-          ) : (
-            <PublicOnlyRoute>{route.element}</PublicOnlyRoute>
-          );
+          let element;
+          if (route.isAdmin) {
+            element = <AdminRoute>{route.element}</AdminRoute>;
+          } else if (route.isPrivate) {
+            element = <ProtectedRoute>{route.element}</ProtectedRoute>;
+          } else {
+            element = <PublicOnlyRoute>{route.element}</PublicOnlyRoute>;
+          }
           return <Route key={route.path} path={route.path} element={element} />;
         })}
 

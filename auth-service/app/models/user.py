@@ -1,7 +1,7 @@
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from app.db.base import Base
 from app.models.oauth_account import OAuthAccount
-from sqlalchemy import Boolean, Integer, DateTime, String
+from sqlalchemy import Boolean, Integer, DateTime, String, Enum as SAEnum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List
 import uuid
@@ -22,6 +22,11 @@ class User(SQLAlchemyBaseUserTable[uuid.UUID], Base):
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     locked_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, nullable=True
+    )
+    role: Mapped[str] = mapped_column(
+        SAEnum("user", "admin", "superadmin", name="user_role"),
+        default="user",
+        nullable=False,
     )
     oauth_accounts: Mapped[List[OAuthAccount]] = relationship(
         "OAuthAccount", lazy="joined"
