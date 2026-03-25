@@ -70,6 +70,20 @@ export interface CandidateCreate {
     display_name: string;
     bio?: string;
     avatar_url?: string;
+    program?: string;
+    position?: string;
+    slogan?: string;
+    priorities?: string[];
+}
+
+export interface CandidateUpdate {
+    display_name?: string;
+    bio?: string;
+    avatar_url?: string;
+    program?: string;
+    position?: string;
+    slogan?: string;
+    priorities?: string[];
 }
 
 export interface VoteCreate {

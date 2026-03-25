@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { CandidatesPage as UICandidatesPage } from "@/components/ui/CandidatesPage";
-import type { ElectionData, CandidateData } from "@/components/ui/CandidatesPage";
+import type { ElectionData } from "@/components/ui/CandidatesPage";
 import { useElections } from "@/features/hooks/swr/fetcher/election/useElections";
 
 export function CandidatesPage() {
@@ -30,8 +30,8 @@ export function CandidatesPage() {
         <UICandidatesPage
             elections={transformedElections}
             isLoading={isLoading}
-            onViewProgram={(candidateId) =>
-                navigate(`/elections/candidates/${candidateId}/program`)
+            onViewProgram={(candidateId, electionId) =>
+                navigate(`/elections/candidates/${candidateId}/program?election=${electionId}`)
             }
         />
     );

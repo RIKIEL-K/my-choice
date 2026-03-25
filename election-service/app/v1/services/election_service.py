@@ -147,6 +147,32 @@ class ElectionService:
         vote_count = await self.candidate_repo.vote_count(candidate.id)
         return _candidate_to_read(candidate, vote_count)
 
+    async def get_candidate(self, election_id: str, candidate_id: str) -> CandidateRead:
+        candidate = await self.candidate_repo.get_by_id(candidate_id)
+        if not candidate or candidate.election_id != election_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
+        vote_count = await self.candidate_repo.vote_count(candidate.id)
+        return _candidate_to_read(candidate, vote_count)
+
+    async def admin_update_candidate(
+        self, election_id: str, candidate_id: str, data: "CandidateUpdate"
+    ) -> CandidateRead:
+        from app.v1.schemas.candidate import CandidateUpdate  # noqa
+        election = await self.election_repo.get_by_id(election_id)
+        if not election:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Election not found")
+        if election.status != ElectionStatus.draft:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le programme ne peut être modifié que si l'élection est en statut 'draft'.",
+            )
+        candidate = await self.candidate_repo.get_by_id(candidate_id)
+        if not candidate or candidate.election_id != election_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
+        updated = await self.candidate_repo.update(candidate, data)
+        vote_count = await self.candidate_repo.vote_count(updated.id)
+        return _candidate_to_read(updated, vote_count)
+
     async def remove_candidate(
         self, election_id: str, candidate_id: str, user_id: str
     ) -> None:

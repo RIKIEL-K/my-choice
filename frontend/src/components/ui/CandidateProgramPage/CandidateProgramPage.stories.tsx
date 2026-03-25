@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { CandidateProgramPage } from "./index";
-import { getCandidateProgramById } from "./candidatesProgramData";
-
-const candidate = getCandidateProgramById(1)!;
+import { getMockCandidateById } from "./candidatesProgramData";
 
 const meta: Meta<typeof CandidateProgramPage> = {
     title: "Pages/CandidateProgramPage",
@@ -20,21 +18,24 @@ type Story = StoryObj<typeof CandidateProgramPage>;
 
 export const Default: Story = {
     args: {
-        candidate,
+        candidate: getMockCandidateById("cand-1")!,
+        electionTitle: "Élections BDE 2026",
         onBack: () => {},
     },
 };
 
 export const ThomasMartin: Story = {
     args: {
-        candidate: getCandidateProgramById(2)!,
+        candidate: getMockCandidateById("cand-2")!,
+        electionTitle: "Élections BDE 2026",
         onBack: () => {},
     },
 };
 
 export const EmmaRodriguez: Story = {
     args: {
-        candidate: getCandidateProgramById(3)!,
+        candidate: getMockCandidateById("cand-3")!,
+        electionTitle: "Élections BDE 2026",
         onBack: () => {},
     },
 };

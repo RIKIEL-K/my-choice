@@ -15,18 +15,11 @@ import {
     TabsTrigger,
 } from "@/components/ui/Tabs";
 import {
-    GraduationCap,
     Users,
     Target,
     Calendar,
     ExternalLink,
 } from "lucide-react";
-
-export interface ElectionMock {
-    id: string;
-    title: string;
-    description: string;
-}
 
 export interface CandidateData {
     id: string;
@@ -50,18 +43,18 @@ export interface ElectionData {
 
 export interface CandidatesPageProps {
     elections?: ElectionData[];
-    onViewProgram?: (candidateId: string) => void;
+    onViewProgram?: (candidateId: string, electionId: string) => void;
     isLoading?: boolean;
 }
 
-
-
 function CandidateCard({
     candidate,
+    electionId,
     onViewProgram,
 }: {
     candidate: CandidateData;
-    onViewProgram?: (candidateId: string) => void;
+    electionId: string;
+    onViewProgram?: (candidateId: string, electionId: string) => void;
 }) {
     return (
         <Card className="h-full">
@@ -92,33 +85,25 @@ function CandidateCard({
                     {candidate.description}
                 </p>
 
-                <div>
-                    <h4 className="font-medium mb-2 flex items-center">
-                        <Target className="w-4 h-4 mr-2 text-primary shrink-0" />
-                        Priorités
-                    </h4>
-                    <ul className="space-y-1">
-                        {candidate.priorities.map((priority, index) => (
-                            <li
-                                key={index}
-                                className="text-sm flex items-start"
-                            >
-                                <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-2 flex-shrink-0" />
-                                {priority}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 className="font-medium mb-1 flex items-center">
-                        <GraduationCap className="w-4 h-4 mr-2 text-primary shrink-0" />
-                        Expérience
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                        {candidate.experience}
-                    </p>
-                </div>
+                {candidate.priorities.length > 0 && (
+                    <div>
+                        <h4 className="font-medium mb-2 flex items-center">
+                            <Target className="w-4 h-4 mr-2 text-primary shrink-0" />
+                            Priorités
+                        </h4>
+                        <ul className="space-y-1">
+                            {candidate.priorities.map((priority, index) => (
+                                <li
+                                    key={index}
+                                    className="text-sm flex items-start"
+                                >
+                                    <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-2 flex-shrink-0" />
+                                    {priority}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div className="pt-2 border-t border-border">
                     <Button
@@ -127,7 +112,7 @@ function CandidateCard({
                         className="h-auto p-0 text-sm text-primary hover:underline"
                         onClick={(e) => {
                             e.preventDefault();
-                            onViewProgram?.(candidate.id);
+                            onViewProgram?.(candidate.id, electionId);
                         }}
                     >
                         <ExternalLink className="w-3.5 h-3.5 mr-1.5 shrink-0" />
@@ -140,7 +125,6 @@ function CandidateCard({
 }
 
 export function CandidatesPage({ elections = [], onViewProgram, isLoading }: CandidatesPageProps = {}) {
-    // If no elections exist, just show one default tab to avoid broken UI
     const defaultTab = elections.length > 0 ? elections[0].id : "none";
 
     return (
@@ -197,6 +181,7 @@ export function CandidatesPage({ elections = [], onViewProgram, isLoading }: Can
                                         <CandidateCard
                                             key={candidate.id}
                                             candidate={candidate}
+                                            electionId={election.id}
                                             onViewProgram={onViewProgram}
                                         />
                                     ))}

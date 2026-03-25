@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
@@ -35,6 +35,35 @@ async def list_candidates(
     from app.v1.services.election_service import _candidate_to_read
     election_read = await service.get_election(election_id)
     return election_read.candidates
+
+
+@router.get(
+    "/{election_id}/candidates/{candidate_id}",
+    response_model=CandidateRead,
+    summary="Get single candidate",
+)
+async def get_candidate(
+    election_id: uuid.UUID,
+    candidate_id: uuid.UUID,
+    service: ElectionService = Depends(get_election_service),
+):
+    """Return a single candidate with vote count."""
+    return await service.get_candidate(str(election_id), str(candidate_id))
+
+
+@router.patch(
+    "/{election_id}/candidates/{candidate_id}/admin",
+    response_model=CandidateRead,
+    summary="Admin update candidate program fields",
+)
+async def admin_update_candidate(
+    election_id: uuid.UUID,
+    candidate_id: uuid.UUID,
+    data: CandidateUpdate = Body(...),
+    service: ElectionService = Depends(get_election_service),
+):
+    """Admin-only: update candidate program fields. Only allowed when election is in 'draft' status."""
+    return await service.admin_update_candidate(str(election_id), str(candidate_id), data)
 
 
 @router.post(
