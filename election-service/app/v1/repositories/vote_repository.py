@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
@@ -35,3 +35,11 @@ class VoteRepository:
             raise ValueError("You have already voted in this election.")
         await self.session.refresh(vote)
         return vote
+
+    async def _count_for_candidate(self, candidate_id: str) -> int:
+        result = await self.session.execute(
+            select(func.count()).select_from(Vote).where(
+                Vote.candidate_id == candidate_id
+            )
+        )
+        return result.scalar_one()

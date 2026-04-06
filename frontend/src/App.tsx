@@ -18,78 +18,56 @@ import { PublicOnlyRoute } from "@/components/routes/PublicOnlyRoute";
 import { AdminRoute } from "@/components/routes/AdminRoute";
 import { ToastMessageHandler } from "@/components/common/ToastMessageHandler";
 
-const routes = [
+// Routes that live inside the standard constrained layout
+const standardRoutes = [
   { path: "/", element: <HomePage />, isPrivate: true },
   { path: "/signin", element: <SigninPage />, isPrivate: false },
   { path: "/signup", element: <SignupPage />, isPrivate: false },
-  {
-    path: "/forgot-password",
-    element: <ForgotPasswordPage />,
-    isPrivate: false,
-  },
-  {
-    path: "/sent-reset-password-mail",
-    element: <SentResetPasswordMailPage />,
-    isPrivate: false,
-  },
-  {
-    path: "/reset-password/:token",
-    element: <ResetPasswordPage />,
-    isPrivate: false,
-  },
+  { path: "/forgot-password", element: <ForgotPasswordPage />, isPrivate: false },
+  { path: "/sent-reset-password-mail", element: <SentResetPasswordMailPage />, isPrivate: false },
+  { path: "/reset-password/:token", element: <ResetPasswordPage />, isPrivate: false },
   { path: "/not-verified", element: <NotVerifiedPage />, isPrivate: true },
-  {
-    path: "/verify-token/:token",
-    element: <VerifyTokenPage />,
-    isPrivate: true,
-  },
-  {
-    path: "/me/edit",
-    element: <EditUserPage />,
-    isPrivate: true,
-  },
-  {
-    path: "/elections/:id/vote",
-    element: <VotePage />,
-    isPrivate: true,
-  },
-  {
-    path: "/elections/candidates",
-    element: <CandidatesPage />,
-    isPrivate: true,
-  },
-  {
-    path: "/elections/candidates/:id/program",
-    element: <CandidateProgramPage />,
-    isPrivate: true,
-  },
-  {
-    path: "/admin",
-    element: <AdminDashboardPage />,
-    isAdmin: true,
-  },
+  { path: "/verify-token/:token", element: <VerifyTokenPage />, isPrivate: true },
+  { path: "/me/edit", element: <EditUserPage />, isPrivate: true },
+  { path: "/elections/:id/vote", element: <VotePage />, isPrivate: true },
+  { path: "/elections/candidates", element: <CandidatesPage />, isPrivate: true },
+  { path: "/elections/candidates/:id/program", element: <CandidateProgramPage />, isPrivate: true },
 ];
 
 function App() {
   return (
-    <div className="max-w-[1200px] mx-auto w-full">
+    <>
       <ToastMessageHandler />
       <Routes>
-        {routes.map((route) => {
-          let element;
-          if (route.isAdmin) {
-            element = <AdminRoute>{route.element}</AdminRoute>;
-          } else if (route.isPrivate) {
-            element = <ProtectedRoute>{route.element}</ProtectedRoute>;
-          } else {
-            element = <PublicOnlyRoute>{route.element}</PublicOnlyRoute>;
+        {/* Admin dashboard — full-screen, no width constraint */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboardPage />
+            </AdminRoute>
           }
-          return <Route key={route.path} path={route.path} element={element} />;
-        })}
+        />
 
-        <Route path="*" element={<NotFoundPage />} />
+        {/* Standard constrained layout */}
+        <Route
+          path="/*"
+          element={
+            <div className="max-w-[1200px] mx-auto w-full">
+              <Routes>
+                {standardRoutes.map((route) => {
+                  const element = route.isPrivate
+                    ? <ProtectedRoute>{route.element}</ProtectedRoute>
+                    : <PublicOnlyRoute>{route.element}</PublicOnlyRoute>;
+                  return <Route key={route.path} path={route.path} element={element} />;
+                })}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </div>
+          }
+        />
       </Routes>
-    </div>
+    </>
   );
 }
 

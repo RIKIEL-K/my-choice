@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.v1.routers import elections, candidates, stats, webhook
+from app.v1.routers import elections, candidates, stats, webhook, admin
 
 router = APIRouter()
 
@@ -8,5 +8,6 @@ router.include_router(stats.router, prefix="/elections/stats", tags=["stats"])
 router.include_router(elections.router, prefix="/elections", tags=["elections"])
 router.include_router(candidates.router, prefix="/elections", tags=["candidates"])
 router.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
+router.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 api_router = router

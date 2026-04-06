@@ -23,6 +23,7 @@ def _candidate_to_read(c: Candidate, vote_count: int = 0) -> CandidateRead:
         slogan=c.slogan,
         priorities=c.priorities_list,
         vote_count=vote_count,
+        approval_status=c.approval_status,
         created_at=c.created_at,
     )
 

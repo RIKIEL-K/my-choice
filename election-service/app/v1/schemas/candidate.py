@@ -2,6 +2,7 @@ from typing import List
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
+from app.models.candidate import ApprovalStatus
 
 
 class CandidateCreate(BaseModel):
@@ -26,6 +27,7 @@ class CandidateRead(BaseModel):
     slogan: str | None = None
     priorities: List[str] = []
     vote_count: int = 0
+    approval_status: ApprovalStatus = ApprovalStatus.pending
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -39,3 +41,4 @@ class CandidateUpdate(BaseModel):
     position: str | None = None
     slogan: str | None = None
     priorities: List[str] | None = None
+    approval_status: ApprovalStatus | None = None

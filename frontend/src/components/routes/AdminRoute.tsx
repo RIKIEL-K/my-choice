@@ -2,8 +2,6 @@ import type { FC, ReactNode } from "react";
 import { useUser } from "@/features/hooks/swr/fetcher/user/useUser";
 import { useAuth } from "@/features/hooks/context/useAuth";
 import { Loading } from "@/components/ui/Loading";
-import { ErrorDisplay } from "@/components/ui/ErrorDisplay";
-import { ProtectedLayout } from "@/components/layout/ProtectedLayout";
 import { Navigate } from "react-router-dom";
 
 type AdminRouteProps = {
@@ -16,9 +14,14 @@ export const AdminRoute: FC<AdminRouteProps> = ({ children }) => {
 
   if (isLoading) {
     return <Loading />;
-  } else if (isError) {
-    return <ErrorDisplay status={404} errorMessage="User is not found" />;
-  } else if (!user) {
+  }
+
+  // If the auth service is unreachable or token expired → go to signin
+  if (isError) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  if (!user) {
     return null;
   }
 
@@ -27,5 +30,6 @@ export const AdminRoute: FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  return <ProtectedLayout>{children}</ProtectedLayout>;
+  // AdminShell is its own full-screen layout — no ProtectedLayout wrapper needed
+  return <>{children}</>;
 };

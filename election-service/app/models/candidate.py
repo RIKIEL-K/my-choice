@@ -2,10 +2,17 @@
 Candidate model — a user who has registered to run in an election.
 """
 import uuid
-from sqlalchemy import String, Text, ForeignKey
+from enum import Enum as PyEnum
+from sqlalchemy import String, Text, ForeignKey, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 import json
+
+
+class ApprovalStatus(str, PyEnum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
 
 
 class Candidate(Base, TimestampMixin):
@@ -27,6 +34,13 @@ class Candidate(Base, TimestampMixin):
     slogan: Mapped[str | None] = mapped_column(String(300), nullable=True)
     # JSON-encoded list of strings: '["Priority A", "Priority B"]'
     priorities: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Admin approval status — candidates must be approved before voters can see them
+    approval_status: Mapped[ApprovalStatus] = mapped_column(
+        Enum(ApprovalStatus),
+        default=ApprovalStatus.pending,
+        nullable=False,
+        index=True,
+    )
 
     @property
     def priorities_list(self) -> list[str]:
@@ -38,16 +52,16 @@ class Candidate(Base, TimestampMixin):
             return []
 
     # Relations
-    election: Mapped["Election"] = relationship(  # noqa: F821
+    election: Mapped["Election"] = relationship(  
         "Election", back_populates="candidates"
     )
-    election_user: Mapped["ElectionUser"] = relationship(  # noqa: F821
+    election_user: Mapped["ElectionUser"] = relationship(  
         "ElectionUser",
         primaryjoin="Candidate.user_id == ElectionUser.user_id",
         foreign_keys="[Candidate.user_id]",
         back_populates="candidacies",
         lazy="select",
     )
-    votes_received: Mapped[list["Vote"]] = relationship(  # noqa: F821
+    votes_received: Mapped[list["Vote"]] = relationship(  
         "Vote", back_populates="candidate", lazy="select"
     )
