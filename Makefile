@@ -1,6 +1,5 @@
 # ==============================================================================
-#  Choose2 - Makefile racine
-#  Services : auth-service | election-service | frontend
+#  Choose - Makefile
 # ==============================================================================
 
 .DEFAULT_GOAL := help
@@ -30,7 +29,7 @@ FRONTEND_PORT  := 5173
 help:
 	@printf "\n"
 	@printf "$(CYAN)$(BOLD)================================================================$(RESET)\n"
-	@printf "$(CYAN)$(BOLD)   Choose2 - Commandes Make$(RESET)\n"
+	@printf "$(CYAN)$(BOLD)   Choose - Commandes Make$(RESET)\n"
 	@printf "$(CYAN)$(BOLD)================================================================$(RESET)\n"
 	@printf "\n"
 	@printf "$(GREEN)$(BOLD)>> Demarrage$(RESET)\n"
