@@ -136,8 +136,8 @@ dev:
 	@printf "$(YELLOW)   auth-service     -> http://localhost:$(AUTH_PORT)  [Docker Compose]$(RESET)\n"
 	@printf "$(YELLOW)   election-service -> http://localhost:$(ELECTION_PORT)  [uvicorn]$(RESET)\n"
 	@printf "$(YELLOW)   frontend         -> http://localhost:$(FRONTEND_PORT)  [vite]$(RESET)\n"
-	$(MAKE) -j2 dev-election dev-frontend
 	$(MAKE) auth-up
+	$(MAKE) -j2 dev-election dev-frontend
 
 # auth-service : lance via Docker Compose (inclut FastAPI + Minio + Redis + Sendria)
 .PHONY: dev-auth
