@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/Dialog';
 import {
   Plus, Calendar, Users, BarChart2, Edit, Trash2, Play, Square,
-  CheckCircle2, AlertCircle, Search, Filter, Loader2
+  CheckCircle2, AlertCircle, Search, Filter, Loader2, BarChart3
 } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -23,6 +23,7 @@ import {
   deleteElection,
 } from '@/features/hooks/swr/fetcher/election/useAdminElections';
 import type { Election, ElectionCreate, ElectionStatus } from '@/types/api/election/election';
+import { ElectionStats } from './ElectionStats';
 
 const statusConfig: Record<ElectionStatus, { label: string; color: string; icon: React.ReactNode }> = {
   active: { label: 'En cours', color: 'bg-emerald-100 text-emerald-700', icon: <Play className="w-3 h-3" /> },
@@ -44,6 +45,7 @@ export function AdminElections() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [activateTarget, setActivateTarget] = useState<string | null>(null);
   const [closeTarget, setCloseTarget] = useState<string | null>(null);
+  const [statsElection, setStatsElection] = useState<Election | null>(null);
 
   const { elections, isLoading, mutate } = useAdminElections(
     filterStatus !== 'all' ? filterStatus : undefined
@@ -137,6 +139,16 @@ export function AdminElections() {
       setDeleteTarget(null);
     }
   }, [deleteTarget, mutate]);
+
+  // If a specific election is selected for stats, render the stats view
+  if (statsElection) {
+    return (
+      <ElectionStats
+        election={statsElection}
+        onBack={() => setStatsElection(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -254,6 +266,13 @@ export function AdminElections() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => setStatsElection(election)}
+                        className="bg-violet-500 hover:bg-violet-600 text-white h-8 text-xs"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5 mr-1" />Statistiques
+                      </Button>
                       {election.status === 'draft' && (
                         <Button size="sm" onClick={() => setActivateTarget(election.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs">
                           <Play className="w-3.5 h-3.5 mr-1" />Activer
