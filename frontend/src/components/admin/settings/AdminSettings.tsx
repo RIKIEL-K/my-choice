@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Badge } from '@/components/ui/Badge';
 import {
-  Settings, Globe, Bell, Shield, AlertTriangle, CheckCircle,
+  Settings, Globe, Bell, Shield, AlertTriangle,
   Save, Loader2, RefreshCw
 } from 'lucide-react';
 import { toast } from '@/lib/toast';
@@ -257,35 +257,6 @@ export function AdminSettings() {
           </div>
         )}
       </Section>
-
-      {/* Service status */}
-      <Card className="border border-slate-100 shadow-sm">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <CheckCircle className="w-5 h-5 text-emerald-500" />
-            <span className="font-semibold text-slate-800">Statut des services</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: 'Auth Service', detail: ':8000', ok: true },
-              { label: 'Election Service', detail: ':8001', ok: true },
-              { label: 'Base de données', detail: 'MySQL', ok: true },
-              { label: 'Webhook', detail: 'actif', ok: true },
-            ].map((s) => (
-              <div key={s.label} className={`p-3 rounded-lg ${s.ok ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${s.ok ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                  <span className={`text-xs font-medium ${s.ok ? 'text-emerald-700' : 'text-red-700'}`}>
-                    {s.ok ? 'OK' : 'Erreur'}
-                  </span>
-                </div>
-                <p className="text-sm font-medium text-slate-800">{s.label}</p>
-                <p className="text-xs text-slate-500">{s.detail}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Floating save bar */}
       {dirty && (

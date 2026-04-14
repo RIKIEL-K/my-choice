@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import {
-  Vote, Users, BarChart2, TrendingUp, AlertTriangle, CheckCircle,
+  Vote, Users, BarChart2, TrendingUp, AlertTriangle,
   Activity, ArrowUpRight, Bell, Zap, Loader2
 } from 'lucide-react';
 import { useAdminStats } from '@/features/hooks/swr/fetcher/election/useAdminElections';
@@ -240,25 +240,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* System status */}
-      <Card className="border-0 shadow-sm bg-slate-900 text-white">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
-              <span className="font-semibold">Tous les systèmes opérationnels</span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-slate-300">
-              {['Auth Service', 'Election Service', 'BDD', 'Sécurité'].map(s => (
-                <span key={s} className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>{s}
-                </span>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
