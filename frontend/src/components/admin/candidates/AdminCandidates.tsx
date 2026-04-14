@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Textarea } from '@/components/ui/Textarea';
 import { CheckCircle2, XCircle, Trash2, Search, User, Trophy, Clock, Loader2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
   useAdminCandidates,
   approveCandidate,
@@ -26,6 +27,8 @@ export function AdminCandidates() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showReject, setShowReject] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [approveTarget, setApproveTarget] = useState<string | null>(null);
 
   const { candidates, isLoading, mutate } = useAdminCandidates(
     filterStatus !== 'all' ? { approval_status: filterStatus as ApprovalStatus } : undefined
@@ -42,15 +45,18 @@ export function AdminCandidates() {
     .sort((a, b) => b.vote_count - a.vote_count)
     .slice(0, 3);
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = useCallback(async () => {
+    if (!approveTarget) return;
     try {
-      await approveCandidate(id);
+      await approveCandidate(approveTarget);
       await mutate();
       toast.success('Candidature approuvée');
     } catch {
       toast.error('Erreur');
+    } finally {
+      setApproveTarget(null);
     }
-  };
+  }, [approveTarget, mutate]);
 
   const handleReject = async (id: string) => {
     try {
@@ -64,16 +70,18 @@ export function AdminCandidates() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce candidat ?')) return;
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteCandidate(id);
+      await deleteCandidate(deleteTarget);
       await mutate();
       toast.success('Candidat supprimé');
     } catch {
       toast.error('Erreur');
+    } finally {
+      setDeleteTarget(null);
     }
-  };
+  }, [deleteTarget, mutate]);
 
   return (
     <div className="space-y-6">
@@ -97,7 +105,7 @@ export function AdminCandidates() {
                   {c.position && <span className="text-slate-500 text-xs ml-2">— {c.position}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => handleApprove(c.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-7 text-xs">
+                  <Button size="sm" onClick={() => setApproveTarget(c.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-7 text-xs">
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approuver
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setShowReject(c.id)} className="border-red-200 text-red-600 h-7 text-xs">
@@ -188,7 +196,7 @@ export function AdminCandidates() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       {candidate.approval_status === 'pending' && (
                         <>
-                          <Button size="sm" onClick={() => handleApprove(candidate.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-7 text-xs">
+                          <Button size="sm" onClick={() => setApproveTarget(candidate.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-7 text-xs">
                             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approuver
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setShowReject(candidate.id)} className="border-red-200 text-red-600 h-7 text-xs">
@@ -196,7 +204,7 @@ export function AdminCandidates() {
                           </Button>
                         </>
                       )}
-                      <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-red-200 text-red-500" onClick={() => handleDelete(candidate.id)}>
+                      <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-red-200 text-red-500" onClick={() => setDeleteTarget(candidate.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -231,6 +239,26 @@ export function AdminCandidates() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Approve confirmation modal */}
+      <ConfirmModal
+        open={approveTarget !== null}
+        title="Approuver cette candidature ?"
+        message="Le candidat sera visible pour les électeurs."
+        variant="info"
+        onConfirm={handleApprove}
+        onCancel={() => setApproveTarget(null)}
+      />
+
+      {/* Delete confirmation modal */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Supprimer ce candidat ?"
+        message="Cette action est irréversible."
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

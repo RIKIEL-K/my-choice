@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Search, Download, UserX, UserCheck, Users, Shield, Vote, GraduationCap, Loader2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useAdminUsers, updateUserStatus, exportUsersCSV } from '@/features/hooks/swr/fetcher/user/useAdminUsers';
 import type { UserStatus } from '@/types/api/user/user';
 
@@ -23,6 +24,9 @@ function getUserStatus(user: { is_active: boolean; is_verified: boolean; is_lock
 export function AdminStudents() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [suspendTarget, setSuspendTarget] = useState<string | null>(null);
+  const [activateTarget, setActivateTarget] = useState<{ id: string; action: 'activate' | 'validate' } | null>(null);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
 
   const { users, counts, isLoading, mutate } = useAdminUsers({
     page: 1,
@@ -31,34 +35,42 @@ export function AdminStudents() {
     status: filterStatus !== 'all' ? filterStatus : undefined,
   });
 
-  const handleSuspend = async (id: string) => {
+  const handleSuspend = useCallback(async () => {
+    if (!suspendTarget) return;
     try {
-      await updateUserStatus(id, 'suspend');
+      await updateUserStatus(suspendTarget, 'suspend');
       await mutate();
       toast.success('Compte suspendu');
     } catch {
       toast.error('Erreur');
+    } finally {
+      setSuspendTarget(null);
     }
-  };
+  }, [suspendTarget, mutate]);
 
-  const handleActivate = async (id: string, action: 'activate' | 'validate') => {
+  const handleActivate = useCallback(async () => {
+    if (!activateTarget) return;
     try {
-      await updateUserStatus(id, action);
+      await updateUserStatus(activateTarget.id, activateTarget.action);
       await mutate();
-      toast.success(action === 'validate' ? 'Compte validé' : 'Compte réactivé');
+      toast.success(activateTarget.action === 'validate' ? 'Compte validé' : 'Compte réactivé');
     } catch {
       toast.error('Erreur');
+    } finally {
+      setActivateTarget(null);
     }
-  };
+  }, [activateTarget, mutate]);
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     try {
       await exportUsersCSV();
       toast.success('Export CSV téléchargé');
     } catch {
       toast.error("Erreur lors de l'export");
+    } finally {
+      setShowExportConfirm(false);
     }
-  };
+  }, []);
 
   const statCards = [
     { label: 'Total inscrits', value: counts.total, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -74,7 +86,7 @@ export function AdminStudents() {
           <h1 className="text-2xl font-bold text-slate-900">Étudiants</h1>
           <p className="text-slate-500 text-sm mt-1">Gestion des comptes étudiants inscrits</p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
+        <Button variant="outline" onClick={() => setShowExportConfirm(true)}>
           <Download className="w-4 h-4 mr-2" />Exporter CSV
         </Button>
       </div>
@@ -161,15 +173,15 @@ export function AdminStudents() {
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1.5">
                           {status === 'active' ? (
-                            <Button size="sm" variant="outline" onClick={() => handleSuspend(user.id)} className="h-7 text-xs border-red-200 text-red-500">
+                            <Button size="sm" variant="outline" onClick={() => setSuspendTarget(user.id)} className="h-7 text-xs border-red-200 text-red-500">
                               <UserX className="w-3 h-3 mr-1" />Suspendre
                             </Button>
                           ) : status === 'suspended' ? (
-                            <Button size="sm" variant="outline" onClick={() => handleActivate(user.id, 'activate')} className="h-7 text-xs border-emerald-200 text-emerald-600">
+                            <Button size="sm" variant="outline" onClick={() => setActivateTarget({ id: user.id, action: 'activate' })} className="h-7 text-xs border-emerald-200 text-emerald-600">
                               <UserCheck className="w-3 h-3 mr-1" />Réactiver
                             </Button>
                           ) : (
-                            <Button size="sm" variant="outline" onClick={() => handleActivate(user.id, 'validate')} className="h-7 text-xs border-emerald-200 text-emerald-600">
+                            <Button size="sm" variant="outline" onClick={() => setActivateTarget({ id: user.id, action: 'validate' })} className="h-7 text-xs border-emerald-200 text-emerald-600">
                               <UserCheck className="w-3 h-3 mr-1" />Valider
                             </Button>
                           )}
@@ -189,6 +201,36 @@ export function AdminStudents() {
           </div>
         </Card>
       )}
+
+      {/* Suspend confirmation modal */}
+      <ConfirmModal
+        open={suspendTarget !== null}
+        title="Suspendre ce compte ?"
+        message="L'étudiant ne pourra plus voter."
+        variant="danger"
+        onConfirm={handleSuspend}
+        onCancel={() => setSuspendTarget(null)}
+      />
+
+      {/* Activate/Validate confirmation modal */}
+      <ConfirmModal
+        open={activateTarget !== null}
+        title={activateTarget?.action === 'validate' ? 'Valider ce compte ?' : 'Réactiver ce compte ?'}
+        message={activateTarget?.action === 'validate' ? "Le compte sera activé et vérifié." : "L'étudiant pourra à nouveau voter."}
+        variant="info"
+        onConfirm={handleActivate}
+        onCancel={() => setActivateTarget(null)}
+      />
+
+      {/* Export confirmation modal */}
+      <ConfirmModal
+        open={showExportConfirm}
+        title="Exporter les données ?"
+        message="Un fichier CSV sera téléchargé."
+        variant="info"
+        onConfirm={handleExport}
+        onCancel={() => setShowExportConfirm(false)}
+      />
     </div>
   );
 }

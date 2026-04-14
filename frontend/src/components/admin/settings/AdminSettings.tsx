@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,6 +9,7 @@ import {
   Save, Loader2, RefreshCw
 } from 'lucide-react';
 import { toast } from '@/lib/toast';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useAdminSettings, updateAdminSettings } from '@/features/hooks/swr/fetcher/user/useAdminUsers';
 import type { PlatformSettings } from '@/types/api/user/user';
 
@@ -63,6 +64,8 @@ export function AdminSettings() {
   const [form, setForm] = useState<PlatformSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (remote && !form) setForm(remote);
@@ -73,7 +76,7 @@ export function AdminSettings() {
     setDirty(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!form) return;
     setSaving(true);
     try {
@@ -85,12 +88,14 @@ export function AdminSettings() {
       toast.error('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
+      setShowSaveConfirm(false);
     }
-  };
+  }, [form, mutate]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (remote) { setForm(remote); setDirty(false); toast.info('Modifications annulées'); }
-  };
+    setShowResetConfirm(false);
+  }, [remote]);
 
   if (isLoading || !form) {
     return (
@@ -114,12 +119,12 @@ export function AdminSettings() {
               <AlertTriangle className="w-3 h-3" />Non sauvegardé
             </Badge>
           )}
-          <Button variant="outline" size="sm" onClick={handleReset} disabled={!dirty || saving}>
+          <Button variant="outline" size="sm" onClick={() => setShowResetConfirm(true)} disabled={!dirty || saving}>
             <RefreshCw className="w-4 h-4 mr-2" />Annuler
           </Button>
           <Button
             size="sm"
-            onClick={handleSave}
+            onClick={() => setShowSaveConfirm(true)}
             disabled={!dirty || saving}
             className="bg-violet-600 hover:bg-violet-700 text-white"
           >
@@ -287,16 +292,36 @@ export function AdminSettings() {
         <div className="fixed bottom-6 right-6 z-50">
           <div className="bg-slate-900 text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-4">
             <span className="text-sm">Modifications non sauvegardées</span>
-            <Button size="sm" variant="outline" onClick={handleReset} className="border-slate-600 text-slate-300 hover:text-white h-8 text-xs">
+            <Button size="sm" variant="outline" onClick={() => setShowResetConfirm(true)} className="border-slate-600 text-slate-300 hover:text-white h-8 text-xs">
               Annuler
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving} className="bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs">
+            <Button size="sm" onClick={() => setShowSaveConfirm(true)} disabled={saving} className="bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs">
               {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1.5" />}
               Enregistrer
             </Button>
           </div>
         </div>
       )}
+
+      {/* Save confirmation modal */}
+      <ConfirmModal
+        open={showSaveConfirm}
+        title="Enregistrer les modifications ?"
+        message="Les paramètres seront appliqués immédiatement."
+        variant="info"
+        onConfirm={handleSave}
+        onCancel={() => setShowSaveConfirm(false)}
+      />
+
+      {/* Reset confirmation modal */}
+      <ConfirmModal
+        open={showResetConfirm}
+        title="Annuler les modifications ?"
+        message="Toutes les modifications non sauvegardées seront perdues."
+        variant="warning"
+        onConfirm={handleReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }

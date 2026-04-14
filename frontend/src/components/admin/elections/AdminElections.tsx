@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -15,6 +15,7 @@ import {
   CheckCircle2, AlertCircle, Search, Filter, Loader2
 } from 'lucide-react';
 import { toast } from '@/lib/toast';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
   useAdminElections,
   createElection,
@@ -40,6 +41,9 @@ export function AdminElections() {
   const [showEdit, setShowEdit] = useState<Election | null>(null);
   const [form, setForm] = useState<ElectionCreate>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [activateTarget, setActivateTarget] = useState<string | null>(null);
+  const [closeTarget, setCloseTarget] = useState<string | null>(null);
 
   const { elections, isLoading, mutate } = useAdminElections(
     filterStatus !== 'all' ? filterStatus : undefined
@@ -95,36 +99,44 @@ export function AdminElections() {
     }
   };
 
-  const handleActivate = async (id: string) => {
+  const handleActivate = useCallback(async () => {
+    if (!activateTarget) return;
     try {
-      await updateElection(id, { status: 'active' });
+      await updateElection(activateTarget, { status: 'active' });
       await mutate();
       toast.success('Élection activée');
     } catch {
       toast.error('Erreur');
+    } finally {
+      setActivateTarget(null);
     }
-  };
+  }, [activateTarget, mutate]);
 
-  const handleClose = async (id: string) => {
+  const handleClose = useCallback(async () => {
+    if (!closeTarget) return;
     try {
-      await updateElection(id, { status: 'closed' });
+      await updateElection(closeTarget, { status: 'closed' });
       await mutate();
       toast.success('Élection clôturée');
     } catch {
       toast.error('Erreur');
+    } finally {
+      setCloseTarget(null);
     }
-  };
+  }, [closeTarget, mutate]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette élection ?')) return;
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteElection(id);
+      await deleteElection(deleteTarget);
       await mutate();
       toast.success('Élection supprimée');
     } catch {
       toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleteTarget(null);
     }
-  };
+  }, [deleteTarget, mutate]);
 
   return (
     <div className="space-y-6">
@@ -243,19 +255,19 @@ export function AdminElections() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {election.status === 'draft' && (
-                        <Button size="sm" onClick={() => handleActivate(election.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs">
+                        <Button size="sm" onClick={() => setActivateTarget(election.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs">
                           <Play className="w-3.5 h-3.5 mr-1" />Activer
                         </Button>
                       )}
                       {election.status === 'active' && (
-                        <Button size="sm" variant="outline" onClick={() => handleClose(election.id)} className="border-red-200 text-red-600 h-8 text-xs">
+                        <Button size="sm" variant="outline" onClick={() => setCloseTarget(election.id)} className="border-red-200 text-red-600 h-8 text-xs">
                           <Square className="w-3.5 h-3.5 mr-1" />Clôturer
                         </Button>
                       )}
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => setShowEdit(election)}>
                         <Edit className="w-3.5 h-3.5" />
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-red-200 text-red-500" onClick={() => handleDelete(election.id)}>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-red-200 text-red-500" onClick={() => setDeleteTarget(election.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -339,6 +351,36 @@ export function AdminElections() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Activate confirmation modal */}
+      <ConfirmModal
+        open={activateTarget !== null}
+        title="Activer cette élection ?"
+        message="Les électeurs pourront voter dès maintenant."
+        variant="info"
+        onConfirm={handleActivate}
+        onCancel={() => setActivateTarget(null)}
+      />
+
+      {/* Close confirmation modal */}
+      <ConfirmModal
+        open={closeTarget !== null}
+        title="Clôturer cette élection ?"
+        message="Aucun vote ne pourra plus être enregistré."
+        variant="warning"
+        onConfirm={handleClose}
+        onCancel={() => setCloseTarget(null)}
+      />
+
+      {/* Delete confirmation modal */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Supprimer cette élection ?"
+        message="Toutes les données associées seront perdues."
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
