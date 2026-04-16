@@ -198,32 +198,12 @@ test-election:
 	@printf "$(CYAN)-> [election-service] pytest...$(RESET)\n"
 	cd $(ELECTION_DIR) && uv run pytest
 
-.PHONY: test-auth-cov
-test-auth-cov:
-	@printf "$(CYAN)-> [auth-service] pytest + coverage...$(RESET)\n"
-	cd $(AUTH_DIR) && uv run pytest --cov=app --cov-report=term-missing
-
-.PHONY: test-election-cov
-test-election-cov:
-	@printf "$(CYAN)-> [election-service] pytest + coverage...$(RESET)\n"
-	cd $(ELECTION_DIR) && uv run pytest --cov=app --cov-report=term-missing
-
 # ==============================================================================
 #  LINT
 # ==============================================================================
 
 .PHONY: lint
 lint: lint-auth lint-election lint-frontend
-
-.PHONY: lint-auth
-lint-auth:
-	@printf "$(CYAN)-> [auth-service] ruff check...$(RESET)\n"
-	cd $(AUTH_DIR) && uv run ruff check .
-
-.PHONY: lint-election
-lint-election:
-	@printf "$(CYAN)-> [election-service] ruff check...$(RESET)\n"
-	cd $(ELECTION_DIR) && uv run ruff check .
 
 .PHONY: lint-frontend
 lint-frontend:
@@ -233,19 +213,6 @@ lint-frontend:
 # ==============================================================================
 #  FORMAT
 # ==============================================================================
-
-.PHONY: format
-format: format-auth format-election format-frontend
-
-.PHONY: format-auth
-format-auth:
-	@printf "$(CYAN)-> [auth-service] ruff format...$(RESET)\n"
-	cd $(AUTH_DIR) && uv run ruff format .
-
-.PHONY: format-election
-format-election:
-	@printf "$(CYAN)-> [election-service] ruff format...$(RESET)\n"
-	cd $(ELECTION_DIR) && uv run ruff format .
 
 .PHONY: format-frontend
 format-frontend:
@@ -269,14 +236,6 @@ migrate-election:
 	@printf "$(CYAN)-> [election-service] alembic upgrade head...$(RESET)\n"
 	cd $(ELECTION_DIR) && uv run alembic upgrade head
 
-.PHONY: migration-auth
-migration-auth:
-	cd $(AUTH_DIR) && uv run alembic revision --autogenerate -m "$(MSG)"
-
-.PHONY: migration-election
-migration-election:
-	cd $(ELECTION_DIR) && uv run alembic revision --autogenerate -m "$(MSG)"
-
 # ==============================================================================
 #  BUILD PRODUCTION
 # ==============================================================================
@@ -285,24 +244,3 @@ migration-election:
 build:
 	@printf "$(CYAN)-> [frontend] build production...$(RESET)\n"
 	cd $(FRONTEND_DIR) && npm run build
-
-# ==============================================================================
-#  NETTOYAGE
-# ==============================================================================
-
-.PHONY: clean
-clean:
-	@printf "$(CYAN)-> Nettoyage...$(RESET)\n"
-	find $(AUTH_DIR) -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find $(ELECTION_DIR) -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find $(AUTH_DIR) -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	find $(ELECTION_DIR) -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	rm -rf $(FRONTEND_DIR)/dist 2>/dev/null || true
-	@printf "$(GREEN)OK - Nettoyage termine.$(RESET)\n"
-
-.PHONY: clean-venv
-clean-venv:
-	@printf "$(CYAN)-> Suppression des .venv...$(RESET)\n"
-	rm -rf $(AUTH_DIR)/.venv
-	rm -rf $(ELECTION_DIR)/.venv
-	@printf "$(GREEN)OK - .venv supprimes. Relancez 'make install' pour les recreer.$(RESET)\n"
