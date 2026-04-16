@@ -1,0 +1,29 @@
+ervices:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: vote-service-rabbitmq
+    ports:
+      - "5672:5672"     # AMQP (protocole de messages)
+      - "15672:15672"   # http://localhost:15672 (guest/guest)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - vote-service-net
+
+  redis:
+    image: redis:7
+    container_name: vote-service-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - vote-service-net
+
+volumes:
+  rabbitmq-data:
+
+networks:
+  vote-service-net:
+    driver: bridge

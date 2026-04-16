@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://127.0.0.1:5173"
     # Secret shared between auth-service and election-service for webhook calls
     AUTH_SERVICE_WEBHOOK_SECRET: str = "dev-secret"
+    # RabbitMQ — publication des événements de vote vers le vote-service
+    RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     # Port of this service
     SERVICE_PORT: int = 8001
 

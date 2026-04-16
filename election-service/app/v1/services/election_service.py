@@ -200,7 +200,14 @@ class ElectionService:
         if candidate.user_id == voter_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot vote for yourself.")
 
+        # 1. Persister le vote dans la base election-service (source de vérité)
         try:
             await self.vote_repo.cast_vote(election_id, voter_id, candidate_id)
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+        # 2. Publier l'événement dans RabbitMQ pour le vote-service (fire-and-forget)
+        # Si RabbitMQ est indisponible, le vote reste en DB mais le vote-service
+        # ne recevra pas la notification en temps réel
+        from app.infrastructure.rabbitmq_publisher import publish_vote
+        await publish_vote(str(election_id), str(voter_id), str(candidate_id))

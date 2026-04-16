@@ -1,27 +1,29 @@
 [project]
-name = "election-service"
+name = "vote-service"
 version = "0.1.0"
-description = "A FastAPI-based election microservice for the student voting platform."
+description = "Microservice dédié à la gestion des votes en temps réel — consommation RabbitMQ, cache Redis, API SSE."
 readme = "README.md"
 requires-python = ">=3.11.11"
 dependencies = [
-    "aiomysql>=0.2.0",
-    "aio-pika>=9.5.0",
-    "alembic>=1.15.2",
-    "colorama>=0.4.6",
-    "databases>=0.9.0",
+    # --- Web framework ---
     "fastapi>=0.115.12",
-    "httpx>=0.28.1",
-    "pydantic[email]>=2.11.3",
-    "email-validator>=2.0.0",
-    "pydantic-settings>=2.9.1",
-    "pymysql>=1.1.0",
-    "python-dotenv>=1.1.0",
-    "python-multipart>=0.0.20",
-    "ruff>=0.11.7",
-    "sqlalchemy>=2.0.40",
     "uvicorn>=0.34.2",
-    "uuid7>=0.1.0",
+    # --- Base de données (MySQL async) ---
+    "sqlalchemy>=2.0.40",
+    "aiomysql>=0.2.0",
+    "pymysql>=1.1.0",
+    "databases>=0.9.0",
+    "alembic>=1.15.2",
+    # --- Message broker (RabbitMQ) ---
+    "aio-pika>=9.5.0",
+    # --- Cache (Redis) ---
+    "redis[hiredis]>=5.0.0",
+    # --- HTTP client (appels vers election-service) ---
+    "httpx>=0.28.1",
+    # --- Configuration & validation ---
+    "pydantic>=2.11.3",
+    "pydantic-settings>=2.9.1",
+    "python-dotenv>=1.1.0",
 ]
 
 [dependency-groups]
@@ -29,13 +31,12 @@ dev = [
     "anyio>=4.9.0",
     "coverage>=7.8.0",
     "faker>=37.0.0",
-    "factory-boy>=3.3.3",
     "mypy>=1.15.0",
     "pytest>=8.3.5",
     "pytest-asyncio>=0.26.0",
     "pytest-cov>=6.1.0",
     "pytest-env>=1.1.5",
-    "httpx>=0.28.1",
+    "ruff>=0.11.7",
 ]
 
 [tool.setuptools]

@@ -14,11 +14,13 @@ RESET  := \033[0m
 # Chemins
 AUTH_DIR      := auth-service
 ELECTION_DIR  := election-service
+VOTE_DIR      := vote-service
 FRONTEND_DIR  := frontend
 
 # Ports
 AUTH_PORT      := 8000
 ELECTION_PORT  := 8001
+VOTE_PORT      := 8002
 FRONTEND_PORT  := 5173
 
 # ==============================================================================
@@ -36,54 +38,47 @@ help:
 	@printf "  $(BOLD)make dev$(RESET)                  Demarre TOUS les services en parallele\n"
 	@printf "  $(BOLD)make dev-auth$(RESET)              auth-service       -> http://localhost:$(AUTH_PORT)  [Docker Compose]\n"
 	@printf "  $(BOLD)make dev-election$(RESET)          election-service   -> http://localhost:$(ELECTION_PORT)  [uvicorn]\n"
+	@printf "  $(BOLD)make dev-vote$(RESET)              vote-service       -> http://localhost:$(VOTE_PORT)  [uvicorn]\n"
 	@printf "  $(BOLD)make dev-frontend$(RESET)          frontend           -> http://localhost:$(FRONTEND_PORT)  [vite]\n"
 	@printf "\n"
-	@printf "$(GREEN)$(BOLD)>> Docker (auth-service)$(RESET)\n"
-	@printf "  $(BOLD)make auth-up$(RESET)               docker compose up -d (detache)\n"
-	@printf "  $(BOLD)make auth-down$(RESET)             docker compose down\n"
-	@printf "  $(BOLD)make auth-logs$(RESET)             docker compose logs -f\n"
-	@printf "  $(BOLD)make auth-build$(RESET)            docker compose build\n"
-	@printf "  $(BOLD)make auth-restart$(RESET)          docker compose restart web"
+	@printf "$(GREEN)$(BOLD)>> Docker$(RESET)\n"
+	@printf "  $(BOLD)make auth-up$(RESET)               auth-service : docker compose up -d\n"
+	@printf "  $(BOLD)make auth-down$(RESET)             auth-service : docker compose down\n"
+	@printf "  $(BOLD)make auth-logs$(RESET)             auth-service : docker compose logs -f\n"
+	@printf "  $(BOLD)make auth-build$(RESET)            auth-service : docker compose build\n"
+	@printf "  $(BOLD)make auth-restart$(RESET)          auth-service : docker compose restart web\n"
+	@printf "  $(BOLD)make vote-up$(RESET)               vote-service : docker compose up -d (RabbitMQ + Redis)\n"
+	@printf "  $(BOLD)make vote-down$(RESET)             vote-service : docker compose down\n"
+	@printf "  $(BOLD)make vote-logs$(RESET)             vote-service : docker compose logs -f\n"
 	@printf "\n"
 	@printf "$(GREEN)$(BOLD)>> Installation$(RESET)\n"
 	@printf "  $(BOLD)make install$(RESET)               Installe toutes les dependances\n"
 	@printf "  $(BOLD)make install-auth$(RESET)          uv sync            -- auth-service\n"
 	@printf "  $(BOLD)make install-election$(RESET)      uv sync            -- election-service\n"
+	@printf "  $(BOLD)make install-vote$(RESET)          uv sync            -- vote-service\n"
 	@printf "  $(BOLD)make install-frontend$(RESET)      npm install        -- frontend\n"
-	@printf "  $(BOLD)make reinstall$(RESET)             Reinstalle tout    (supprime les .venv)\n"
-	@printf "  $(BOLD)make reinstall-auth$(RESET)        Supprime .venv + reinstalle auth-service\n"
-	@printf "  $(BOLD)make reinstall-election$(RESET)    Supprime .venv + reinstalle election-service\n"
 	@printf "\n"
 	@printf "$(GREEN)$(BOLD)>> Tests$(RESET)\n"
 	@printf "  $(BOLD)make test$(RESET)                  Lance tous les tests Python\n"
 	@printf "  $(BOLD)make test-auth$(RESET)             pytest             -- auth-service\n"
 	@printf "  $(BOLD)make test-election$(RESET)         pytest             -- election-service\n"
-	@printf "  $(BOLD)make test-auth-cov$(RESET)         pytest + coverage  -- auth-service\n"
-	@printf "  $(BOLD)make test-election-cov$(RESET)     pytest + coverage  -- election-service\n"
+	@printf "  $(BOLD)make test-vote$(RESET)             pytest             -- vote-service\n"
 	@printf "\n"
 	@printf "$(GREEN)$(BOLD)>> Lint & Format$(RESET)\n"
 	@printf "  $(BOLD)make lint$(RESET)                  Lint tous les services\n"
-	@printf "  $(BOLD)make lint-auth$(RESET)             ruff check         -- auth-service\n"
-	@printf "  $(BOLD)make lint-election$(RESET)         ruff check         -- election-service\n"
 	@printf "  $(BOLD)make lint-frontend$(RESET)         eslint             -- frontend\n"
 	@printf "  $(BOLD)make format$(RESET)                Formate tous les services\n"
-	@printf "  $(BOLD)make format-auth$(RESET)           ruff format        -- auth-service\n"
-	@printf "  $(BOLD)make format-election$(RESET)       ruff format        -- election-service\n"
 	@printf "  $(BOLD)make format-frontend$(RESET)       prettier           -- frontend\n"
 	@printf "\n"
 	@printf "$(GREEN)$(BOLD)>> Base de donnees$(RESET)\n"
-	@printf "  $(BOLD)make migrate$(RESET)               alembic upgrade head (les 2 services)\n"
+	@printf "  $(BOLD)make migrate$(RESET)               alembic upgrade head (tous les services)\n"
 	@printf "  $(BOLD)make migrate-auth$(RESET)          alembic upgrade head -- auth-service\n"
 	@printf "  $(BOLD)make migrate-election$(RESET)      alembic upgrade head -- election-service\n"
-	@printf "  $(BOLD)make migration-auth MSG=\"...\"$(RESET)    Nouvelle migration -- auth-service\n"
-	@printf "  $(BOLD)make migration-election MSG=\"...\"$(RESET) Nouvelle migration -- election-service\n"
+	@printf "  $(BOLD)make migrate-vote$(RESET)          alembic upgrade head -- vote-service\n"
+	@printf "  $(BOLD)make create-vote-db$(RESET)        Cree la base de donnees vote_service\n"
 	@printf "\n"
 	@printf "$(GREEN)$(BOLD)>> Build$(RESET)\n"
 	@printf "  $(BOLD)make build$(RESET)                 Build production du frontend\n"
-	@printf "\n"
-	@printf "$(GREEN)$(BOLD)>> Nettoyage$(RESET)\n"
-	@printf "  $(BOLD)make clean$(RESET)                 Supprime __pycache__, .pytest_cache, dist\n"
-	@printf "  $(BOLD)make clean-venv$(RESET)            Supprime les .venv (si corrompus)\n"
 	@printf "\n"
 
 # ==============================================================================
@@ -91,7 +86,7 @@ help:
 # ==============================================================================
 
 .PHONY: install
-install: install-auth install-election install-frontend
+install: install-auth install-election install-vote install-frontend
 	@printf "$(GREEN)OK - Toutes les dependances sont installees.$(RESET)\n"
 
 .PHONY: install-auth
@@ -104,13 +99,18 @@ install-election:
 	@printf "$(CYAN)-> [election-service] uv sync...$(RESET)\n"
 	cd $(ELECTION_DIR) && uv sync
 
+.PHONY: install-vote
+install-vote:
+	@printf "$(CYAN)-> [vote-service] uv sync...$(RESET)\n"
+	cd $(VOTE_DIR) && uv sync
+
 .PHONY: install-frontend
 install-frontend:
 	@printf "$(CYAN)-> [frontend] npm install...$(RESET)\n"
 	cd $(FRONTEND_DIR) && npm install
 
 .PHONY: reinstall
-reinstall: reinstall-auth reinstall-election install-frontend
+reinstall: reinstall-auth reinstall-election reinstall-vote install-frontend
 	@printf "$(GREEN)OK - Reinstallation complete terminee.$(RESET)\n"
 
 .PHONY: reinstall-auth
@@ -125,6 +125,12 @@ reinstall-election:
 	rm -rf $(ELECTION_DIR)/.venv
 	cd $(ELECTION_DIR) && uv sync
 
+.PHONY: reinstall-vote
+reinstall-vote:
+	@printf "$(CYAN)-> [vote-service] suppression .venv + uv sync...$(RESET)\n"
+	rm -rf $(VOTE_DIR)/.venv
+	cd $(VOTE_DIR) && uv sync
+
 # ==============================================================================
 #  DEVELOPPEMENT - Demarrage des services
 # ==============================================================================
@@ -134,9 +140,11 @@ dev:
 	@printf "$(CYAN)-> Demarrage de tous les services...$(RESET)\n"
 	@printf "$(YELLOW)   auth-service     -> http://localhost:$(AUTH_PORT)  [Docker Compose]$(RESET)\n"
 	@printf "$(YELLOW)   election-service -> http://localhost:$(ELECTION_PORT)  [uvicorn]$(RESET)\n"
+	@printf "$(YELLOW)   vote-service     -> http://localhost:$(VOTE_PORT)  [uvicorn + RabbitMQ + Redis]$(RESET)\n"
 	@printf "$(YELLOW)   frontend         -> http://localhost:$(FRONTEND_PORT)  [vite]$(RESET)\n"
 	$(MAKE) auth-up
-	$(MAKE) -j2 dev-election dev-frontend
+	$(MAKE) vote-up
+	$(MAKE) -j3 dev-election dev-vote dev-frontend
 
 # auth-service : lance via Docker Compose (inclut FastAPI + Minio + Redis + Sendria)
 .PHONY: dev-auth
@@ -171,10 +179,38 @@ auth-restart:
 	@printf "$(CYAN)-> [auth-service] redemarrage du service web...$(RESET)\n"
 	cd $(AUTH_DIR) && docker compose restart web
 
+# ==============================================================================
+#  DOCKER - vote-service (RabbitMQ + Redis)
+# ==============================================================================
+
+.PHONY: vote-up
+vote-up:
+	@printf "$(CYAN)-> [vote-service] docker compose up -d (RabbitMQ + Redis)...$(RESET)\n"
+	cd $(VOTE_DIR) && docker compose up -d
+
+.PHONY: vote-down
+vote-down:
+	@printf "$(CYAN)-> [vote-service] docker compose down...$(RESET)\n"
+	cd $(VOTE_DIR) && docker compose down
+
+.PHONY: vote-logs
+vote-logs:
+	@printf "$(CYAN)-> [vote-service] docker compose logs -f...$(RESET)\n"
+	cd $(VOTE_DIR) && docker compose logs -f
+
+# ==============================================================================
+#  DEVELOPPEMENT - Services Python
+# ==============================================================================
+
 .PHONY: dev-election
 dev-election:
 	@printf "$(CYAN)-> [election-service] port $(ELECTION_PORT)...$(RESET)\n"
 	cd $(ELECTION_DIR) && uv run uvicorn main:app --reload --host 0.0.0.0 --port $(ELECTION_PORT)
+
+.PHONY: dev-vote
+dev-vote:
+	@printf "$(CYAN)-> [vote-service] port $(VOTE_PORT)...$(RESET)\n"
+	cd $(VOTE_DIR) && uv run uvicorn main:app --reload --host 0.0.0.0 --port $(VOTE_PORT)
 
 .PHONY: dev-frontend
 dev-frontend:
@@ -186,7 +222,7 @@ dev-frontend:
 # ==============================================================================
 
 .PHONY: test
-test: test-auth test-election
+test: test-auth test-election test-vote
 
 .PHONY: test-auth
 test-auth:
@@ -197,6 +233,11 @@ test-auth:
 test-election:
 	@printf "$(CYAN)-> [election-service] pytest...$(RESET)\n"
 	cd $(ELECTION_DIR) && uv run pytest
+
+.PHONY: test-vote
+test-vote:
+	@printf "$(CYAN)-> [vote-service] pytest...$(RESET)\n"
+	cd $(VOTE_DIR) && uv run pytest
 
 # ==============================================================================
 #  LINT
@@ -224,7 +265,7 @@ format-frontend:
 # ==============================================================================
 
 .PHONY: migrate
-migrate: migrate-auth migrate-election
+migrate: migrate-auth migrate-election migrate-vote
 
 .PHONY: migrate-auth
 migrate-auth:
@@ -235,6 +276,18 @@ migrate-auth:
 migrate-election:
 	@printf "$(CYAN)-> [election-service] alembic upgrade head...$(RESET)\n"
 	cd $(ELECTION_DIR) && uv run alembic upgrade head
+
+.PHONY: migrate-vote
+migrate-vote:
+	@printf "$(CYAN)-> [vote-service] alembic upgrade head...$(RESET)\n"
+	cd $(VOTE_DIR) && uv run alembic upgrade head
+
+# Crée la base de données vote_service (si elle n'existe pas encore)
+.PHONY: create-vote-db
+create-vote-db:
+	@printf "$(CYAN)-> Création de la base de données vote_service...$(RESET)\n"
+	mysql -u root -e "CREATE DATABASE IF NOT EXISTS vote_service CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+	@printf "$(GREEN)OK - Base vote_service créée.$(RESET)\n"
 
 # ==============================================================================
 #  BUILD PRODUCTION
